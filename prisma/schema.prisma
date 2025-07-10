@@ -1,0 +1,121 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User roles enum
+enum Role {
+  AGRIBUSINESS
+  BUSINESS_BUYER
+  LOGISTICS_PARTNER
+  ADMIN
+}
+
+// Verification status enum
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+// Base User model
+model User {
+  id               String            @id @default(uuid())
+  email            String            @unique
+  name             String
+  role             Role
+  password         String?
+  phone            String?
+  profileImage     String?
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  // Role-specific profiles
+  agribusiness     Agribusiness?
+  businessBuyer    BusinessBuyer?
+  logisticsPartner LogisticsPartner?
+  admin            Admin?
+
+  // Sessions
+  sessions Session[]
+}
+
+// Agribusiness profile
+model Agribusiness {
+  id                 String             @id @default(uuid())
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName       String
+  businessAddress    String
+  businessType       String
+  verificationStatus VerificationStatus @default(PENDING)
+  subscriptionTier   String             @default("FREE")
+  isKybVerified      Boolean            @default(false)
+  registrationNumber String?
+  taxId              String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+// Business Buyer profile
+model BusinessBuyer {
+  id                      String             @id @default(uuid())
+  userId                  String             @unique
+  user                    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName             String
+  companyAddress          String
+  companyType             String
+  verificationStatus      VerificationStatus @default(PENDING)
+  loyaltyPoints           Int                @default(0)
+  preferredPaymentMethods String[]           @default([])
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+}
+
+// Logistics Partner profile
+model LogisticsPartner {
+  id                 String             @id @default(uuid())
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName        String
+  companyAddress     String
+  serviceAreas       String[]           @default([])
+  transportModes     String[]           @default([])
+  verificationStatus VerificationStatus @default(PENDING)
+  isKybVerified      Boolean            @default(false)
+  registrationNumber String?
+  insuranceInfo      String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+// Admin profile
+model Admin {
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department  String?
+  permissions String[]  @default(["ALL"]) // All admins have full permissions
+  lastLogin   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Session model for authentication
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
