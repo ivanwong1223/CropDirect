@@ -36,7 +36,7 @@ export default function Home() {
           muted
           className="absolute inset-0 w-full h-full object-cover z-0"
         >
-          <source src="/HeroVideo1.mp4" type="video/mp4" />
+          <source src="https://herovideo-cropdirect.s3.us-east-1.amazonaws.com/HeroVideo1.mp4" type="video/mp4" />
         </video>
 
         {/* Hero Content */}

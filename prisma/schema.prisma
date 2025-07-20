@@ -65,6 +65,7 @@ model Agribusiness {
   subscriptionTier   String             @default("FREE")
   isKybVerified      Boolean            @default(false)
   registrationNumber String?
+  countryIncorporation String?
   taxId              String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt

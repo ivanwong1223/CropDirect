@@ -161,25 +161,25 @@ export default function Navbar() {
                     <AlertDialogCancel className="absolute right-4 top-4 opacity-70 ring-offset-white transition-opacity hover:opacity-100">
                       ✕
                     </AlertDialogCancel>
-                    <AlertDialogTitle className="text-2xl font-semibold tracking-tight">
+                    <AlertDialogTitle className="text-2xl font-semibold text-center">
                       Choose Account Type
                     </AlertDialogTitle>
-                    <AlertDialogDescription className="text-base leading-6 text-gray-600 font-medium mt-2">
-                      Please select below whether you would like to create a Buyer Account or a Seller Account
+                    <AlertDialogDescription className="text-xl text-center leading-8 text-gray-600 font-medium mt-4 mb-2">
+                      Please select below whether you would like to create a Seller Account or a Buyer Account
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter className="flex justify-center sm:justify-center gap-4">
                     <AlertDialogAction 
-                      onClick={() => router.push('/sign-up/buyer')}
-                      className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-8 py-2.5 rounded-lg transition-colors duration-200 cursor-pointer"
-                    >
-                      Buyer
-                    </AlertDialogAction>
-                    <AlertDialogAction 
                       onClick={() => router.push('/sign-up/seller')}
-                      className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-8 py-2.5 rounded-lg transition-colors duration-200 cursor-pointer"
+                      className="bg-green-700 border-green-700 border-1 hover:border-1 hover:bg-white hover:border-green-700 hover:text-green-800 text-white font-bold tracking-wider text-md px-10 py-5.5 rounded-lg transition-colors duration-200 cursor-pointer"
                     >
                       Seller
+                    </AlertDialogAction>
+                    <AlertDialogAction 
+                      onClick={() => router.push('/sign-up/buyer')}
+                      className="bg-green-700 border-green-700 border-1 hover:border-1 hover:bg-white hover:border-green-700 hover:text-green-800 text-white font-bold tracking-wider text-md px-10 py-5.5 rounded-lg transition-colors duration-200 cursor-pointer"
+                    >
+                      Buyer
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
