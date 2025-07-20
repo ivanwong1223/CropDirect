@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button"
 import Link from "next/link";
-import Navbar from "@/components/custom/Navbar";
 import Image from "next/image";
 import { IoMdInformationCircleOutline } from "react-icons/io";
 import { TfiArrowTopRight } from "react-icons/tfi";
@@ -20,6 +19,8 @@ import { AiFillInsurance } from "react-icons/ai";
 import { IoIosChatboxes } from "react-icons/io";
 import { FaIdBadge } from "react-icons/fa";
 import FAQ from '@/components/landing-page/FAQ';
+import MarqueeSection from '@/components/landing-page/Marquee';
+import Testimonial from '@/components/landing-page/Testimonial';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('agribusiness');
@@ -29,7 +30,6 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative max-h-screen w-full">
         <div className="absolute inset-0 bg-black/40 z-10" />
-        <Navbar />
         <video
           autoPlay
           loop
@@ -131,6 +131,11 @@ export default function Home() {
           </div>
         </div>
       </section>
+      {/* Marquee Company using CropDirect Section */}
+      <section className="py-12 bg-[#FAFAFA]">
+        <MarqueeSection />
+      </section>
+
       {/* Our Solution */}
       <section className="relative bg-white py-16 px-8 lg:py-24 lg:px-24">
         <div className="text-center max-w-4xl mx-auto pb-10">
@@ -644,7 +649,10 @@ export default function Home() {
       </section>
       {/* Faqs Section */}
       <FAQ />
-      Hello World
+      {/* Testimonials Section */}
+      <div>
+        <Testimonial />
+      </div>
     </div>
   ); 
 }

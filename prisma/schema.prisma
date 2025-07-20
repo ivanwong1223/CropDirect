@@ -48,6 +48,11 @@ model User {
   sessions Session[]
 }
 
+model FrequentlyAskedQuestion {
+  id          String   @id @default(uuid())
+  question    String
+}
+
 // Agribusiness profile
 model Agribusiness {
   id                 String             @id @default(uuid())
