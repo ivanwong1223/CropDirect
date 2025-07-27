@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import { ArrowLeft, Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { AlertCircleIcon, CheckCircle2Icon, PopcornIcon } from "lucide-react"
 
 // Animation variants for fade-in effect
 const fadeIn = {
@@ -28,10 +30,8 @@ export default function SellerSignUpPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     businessName: "",
-    businessRegNo: "",
     tradingType: "",
     primaryCrop: "",
-    businessAddress: "",
     country: "",
     state: "",
     contactName: "",
@@ -42,10 +42,11 @@ export default function SellerSignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [availableStates, setAvailableStates] = useState<Array<{code: string, name: string}>>([]);
+  const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
 
   // Get countries data
   const countries = getCountries();
-
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -53,6 +54,8 @@ export default function SellerSignUpPage() {
       ...prevState,
       [name]: type === 'checkbox' ? checked : value
     }));
+    // Clear error when user starts typing
+    if (error) setError("");
   };
 
   
@@ -61,6 +64,7 @@ export default function SellerSignUpPage() {
       ...prevState,
       [name]: value
     }));
+    if (error) setError("");
   };
 
   // Handle country selection and update available states
@@ -74,6 +78,8 @@ export default function SellerSignUpPage() {
     // Update available states based on selected country
     const states = getStatesByCountry(countryCode);
     setAvailableStates(states);
+    
+    if (error) setError("");
   };
 
   const handleStateChange = (stateCode: string) => {
@@ -81,16 +87,44 @@ export default function SellerSignUpPage() {
       ...prevState,
       state: stateCode
     }));
+    if (error) setError("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    console.log("Seller registration attempt:", formData);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    // router.push('/dashboard'); // Redirect to a confirmation page or dashboard
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch("/api/createUser/seller", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+      console.log("the form that has submitted: ", formData);
+      console.log("the response from the server: ", data);
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create account");
+      }
+
+      setSuccess("Account created successfully! Redirecting to sign in...");      
+      // Redirect to sign in page after 2 seconds
+      setTimeout(() => {
+        router.push("/sign-in");
+      }, 2000);
+
+    } catch (error) {
+      console.error("Registration error:", error);
+      setError(error instanceof Error ? error.message : "Failed to create account. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const togglePasswordVisibility = () => {
@@ -162,6 +196,45 @@ export default function SellerSignUpPage() {
             >
               Join our network of agricultural businesses.
             </Typography>
+          </div>
+
+          {/* Alert Messages - Fixed at top of screen */}
+          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4">
+            {/* Error Message */}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -50 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -50 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+              >
+                <Alert variant="destructive" className="mb-4 shadow-lg">
+                  <AlertCircleIcon className="h-4 w-4" />
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>
+                    {error}
+                  </AlertDescription>
+                </Alert>
+              </motion.div>
+            )}
+
+            {/* Success Message */}
+            {success && (
+              <motion.div
+                initial={{ opacity: 0, y: -50 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -50 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+              >
+                <Alert className="mb-4 border-green-500 text-green-700 bg-green-50 shadow-lg">
+                  <CheckCircle2Icon className="h-4 w-4 text-green-600" />
+                  <AlertTitle className="text-green-700">Success</AlertTitle>
+                  <AlertDescription className="text-green-700">
+                    {success}
+                  </AlertDescription>
+                </Alert>
+              </motion.div>
+            )}
           </div>
 
           {/* Registration Form */}
@@ -295,7 +368,7 @@ export default function SellerSignUpPage() {
               </Label>
             </div>
 
-            <Button type="submit" disabled={isLoading || !formData.agreeTerms} className="w-full h-12 bg-black hover:bg-gray-800 text-white font-medium rounded-lg transition-colors duration-300 disabled:opacity-50">
+            <Button type="submit" disabled={isLoading || !formData.agreeTerms} className="w-full h-12 bg-black hover:bg-white hover:text-black hover:border hover:border-black hover:cursor-pointer font-medium rounded-lg transition-colors duration-300 disabled:opacity-50 cursor-pointer">
               {isLoading ? (
                 <div className="flex items-center justify-center space-x-2">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

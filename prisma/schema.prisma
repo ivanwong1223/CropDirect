@@ -33,8 +33,6 @@ model User {
   name             String
   role             Role
   password         String?
-  phone            String?
-  profileImage     String?
   isActive         Boolean           @default(true)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -54,21 +52,71 @@ model FrequentlyAskedQuestion {
 }
 
 // Agribusiness profile
+// model Agribusiness {
+//   id                 String             @id @default(uuid())
+//   userId             String             @unique
+//   user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   businessName       String
+//   contactName        String
+//   businessAddress    String
+//   tradingType       String
+//   subscriptionTier   String             @default("FREE")
+//   isKybVerified      Boolean            @default(false)
+//   createdAt          DateTime           @default(now())
+//   updatedAt          DateTime           @updatedAt
+// }
+
 model Agribusiness {
   id                 String             @id @default(uuid())
   userId             String             @unique
   user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Stage 1: Initial Registration Data (from sign-up form)
   businessName       String
-  businessAddress    String
-  businessType       String
-  verificationStatus VerificationStatus @default(PENDING)
+  tradingType        String
+  primaryCropCategory String
+  country            String
+  state              String
+  // Stage 2: KYB Status and Business Operations
+  kybStatus          KYBStatus          @default(NOT_SUBMITTED)
   subscriptionTier   String             @default("FREE")
   isKybVerified      Boolean            @default(false)
-  registrationNumber String?
-  countryIncorporation String?
-  taxId              String?
+
+  bio               String?
+  contactNo            String?
+  businessImage     String?
+  // Relationship to KYB form
+  kybForm            KYBForm?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
+}
+
+enum KYBStatus {
+  NOT_SUBMITTED
+  PENDING
+  APPROVED
+  REJECTED
+  REQUIRES_RESUBMISSION
+}
+
+model KYBForm {
+  id                    String             @id @default(uuid())
+  agribusinessId        String             @unique
+  agribusiness          Agribusiness       @relation(fields: [agribusinessId], references: [id], onDelete: Cascade)
+  
+  // KYB-specific fields
+  businessRegistrationNumber String?
+  businessAddress       String
+  taxId                 String?
+  businessLicense       String?           // File path or URL
+  
+  // KYB Review fields
+  submittedAt           DateTime?
+  reviewedAt            DateTime?
+  reviewedBy            String?           // Admin user ID
+  rejectionReason       String?
+  
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 }
 
 // Business Buyer profile

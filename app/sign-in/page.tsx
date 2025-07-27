@@ -12,7 +12,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
-import { ArrowLeft, Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Mail, Lock, AlertCircle, CheckCircle2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { setUserData } from "@/lib/localStorage";
 
 // Animation variants for fade-in effect
 const fadeIn = {
@@ -27,17 +40,66 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  
+  /**
+   * Handle form submission for user login
+   * Validates credentials, stores user data, and routes based on role
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
+    setSuccess("");
     
-    console.log("Login attempt:", { email, password });
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Login failed");
+        return;
+      }
+
+      // Store user data in localStorage
+      setUserData(data.user);
+      setSuccess("Login successful! Redirecting...");
+
+      // Route based on user role
+      setTimeout(() => {
+        switch (data.user.role) {
+          case "AGRIBUSINESS":
+            router.push("/seller/dashboard");
+            break;
+          case "BUSINESS_BUYER":
+            router.push("/buyer/dashboard");
+            break;
+          case "LOGISTICS_PARTNER":
+            router.push("/logistics/dashboard");
+            break;
+          case "ADMIN":
+            router.push("/admin/dashboard");
+            break;
+          default:
+            router.push("/");
+            break;
+        }
+      }, 1500);
+
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("Network error. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const togglePasswordVisibility = () => {
@@ -110,6 +172,46 @@ export default function LoginPage() {
               Sign in to connect with agricultural opportunities
             </Typography>
           </div>
+
+          {/* Error Alert */}
+          {error && (
+            <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4">
+              <motion.div
+                initial={{ opacity: 0, y: -50 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -50 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Alert className="border-red-200 bg-red-50 shadow-lg">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <AlertTitle className="text-red-800 font-semibold">Error</AlertTitle>
+                  <AlertDescription className="text-red-700">
+                    {error}
+                  </AlertDescription>
+                </Alert>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Success Alert */}
+          {success && (
+            <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4">
+              <motion.div
+                initial={{ opacity: 0, y: -50 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -50 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Alert className="border-green-200 bg-green-50 shadow-lg">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <AlertTitle className="text-green-800 font-semibold">Success</AlertTitle>
+                  <AlertDescription className="text-green-700">
+                    {success}
+                  </AlertDescription>
+                </Alert>
+              </motion.div>
+            </div>
+          )}
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -216,12 +318,42 @@ export default function LoginPage() {
               onPointerLeaveCapture={undefined}
             >
               Dont have an account?{" "}
-              <Link
-                href="/sign-up"
-                className="text-[rgb(14,34,7)] font-medium hover:underline"
-              >
-                Create your account
-              </Link>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <span
+                    className="text-[rgb(14,34,7)] font-medium hover:underline cursor-pointer"
+                  >
+                    Create your account
+                  </span>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="max-w-md">
+                  <AlertDialogHeader className="text-center">
+                    <AlertDialogCancel className="absolute right-4 top-4 opacity-70 ring-offset-white transition-opacity hover:opacity-100">
+                      ✕
+                    </AlertDialogCancel>
+                    <AlertDialogTitle className="text-2xl font-semibold text-center">
+                      Choose Account Type
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-xl text-center leading-8 text-gray-600 font-medium mt-4 mb-2">
+                      Please select below whether you would like to create a Seller Account or a Buyer Account
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="flex justify-center sm:justify-center gap-4">
+                    <AlertDialogAction 
+                      onClick={() => router.push('/sign-up/seller')}
+                      className="bg-green-700 border-green-700 border-1 hover:border-1 hover:bg-white hover:border-green-700 hover:text-green-800 text-white font-bold tracking-wider text-md px-10 py-5.5 rounded-lg transition-colors duration-200 cursor-pointer"
+                    >
+                      Seller
+                    </AlertDialogAction>
+                    <AlertDialogAction 
+                      onClick={() => router.push('/sign-up/buyer')}
+                      className="bg-green-700 border-green-700 border-1 hover:border-1 hover:bg-white hover:border-green-700 hover:text-green-800 text-white font-bold tracking-wider text-md px-10 py-5.5 rounded-lg transition-colors duration-200 cursor-pointer"
+                    >
+                      Buyer
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </Typography>
           </div>
         </div>
