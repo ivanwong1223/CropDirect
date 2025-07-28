@@ -36,7 +36,7 @@ export default function SellerLayout({
         <SellerNavbar />
         
         {/* Page Content */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto">
           {children}
         </div>
       </main>

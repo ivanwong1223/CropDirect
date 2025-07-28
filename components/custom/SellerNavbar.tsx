@@ -25,6 +25,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { cn } from '@/lib/utils';
+import { getUserData } from '@/lib/localStorage';
 
 interface SellerNavbarProps {
   className?: string;
@@ -34,6 +35,7 @@ export default function SellerNavbar({ className }: SellerNavbarProps) {
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState('');
   const [notificationCount] = useState(3); // Mock notification count
+  const userData = getUserData();
 
   // Get menu items from the store
   const getMenuItemByRoute = useMenuStore(state => state.getMenuItemByRoute);
@@ -186,7 +188,9 @@ export default function SellerNavbar({ className }: SellerNavbarProps) {
                 <AvatarImage src="https://avatars.githubusercontent.com/u/59442788" alt="User Avatar" />
               </Avatar>
               <div className="flex flex-col items-start">
-                <span className="text-sm font-medium text-foreground">Ivan Wong</span>
+                {userData && userData.name && (
+                  <span className="text-sm font-medium text-foreground">{userData.name}</span>
+                )}
                 <span className="text-xs text-muted-foreground">Seller</span>
               </div>
               <FaAngleDown className="h-3 w-3 text-muted-foreground" />

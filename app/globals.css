@@ -151,4 +151,35 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none; /* WebKit */
   }
+
+  /* Custom height for charts */
+  .h-350-px {
+    height: 350px;
+  }
+
+  /* Custom width for table columns */
+  .min-w-140-px {
+    min-width: 140px;
+  }
+}
+
+/* BlueGray color palette for dashboard components */
+@layer components {
+  .bg-blueGray-50 { background-color: #f8fafc; }
+  .bg-blueGray-100 { background-color: #f1f5f9; }
+  .bg-blueGray-200 { background-color: #e2e8f0; }
+  .bg-blueGray-700 { background-color: #334155; }
+  .bg-blueGray-800 { background-color: #1e293b; }
+  
+  .text-blueGray-100 { color: #f1f5f9; }
+  .text-blueGray-400 { color: #94a3b8; }
+  .text-blueGray-500 { color: #64748b; }
+  .text-blueGray-600 { color: #475569; }
+  .text-blueGray-700 { color: #334155; }
+  
+  .border-blueGray-100 { border-color: #f1f5f9; }
+  .border-blueGray-200 { border-color: #e2e8f0; }
+  
+  .hover\:text-blueGray-700:hover { color: #334155; }
+  .hover\:text-blueGray-800:hover { color: #1e293b; }
 }

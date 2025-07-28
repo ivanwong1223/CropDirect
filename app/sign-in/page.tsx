@@ -25,7 +25,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { setUserData } from "@/lib/localStorage";
+import { setStoreData } from "@/lib/localStorage";
 
 // Animation variants for fade-in effect
 const fadeIn = {
@@ -43,10 +43,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  /**
-   * Handle form submission for user login
-   * Validates credentials, stores user data, and routes based on role
-   */
+  // Handle form submission for user login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -70,7 +67,7 @@ export default function LoginPage() {
       }
 
       // Store user data in localStorage
-      setUserData(data.user);
+      setStoreData(data.user);
       setSuccess("Login successful! Redirecting...");
 
       // Route based on user role

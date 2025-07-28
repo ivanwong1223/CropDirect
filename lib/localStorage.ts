@@ -11,49 +11,55 @@ interface UserData {
   updatedAt: string;
 }
 
-// Function to set user data in local storage
-function setUserData(userData: UserData): void {
+// Function to set store data in local storage
+function setStoreData(userData: UserData): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
 }
 
-// Function to get user data from local storage
-function getUserData(): UserData | null {
+// Function to get store data from local storage
+function getStoreData(): UserData | null {
   const data = localStorage.getItem(STORAGE_KEY);
   return data ? JSON.parse(data) : null;
 }
 
+// Function to get user data from local storage
+function getUserData(): UserData | null {
+  return getStoreData();
+}
+
 // Function to get user role from local storage
 function getUserRole(): string | null {
-  const userData = getUserData();
-  return userData ? userData.role : null;
+  const userData = getStoreData();
+  return userData && userData.role ? userData.role : null;
 }
 
 // Function to check if user is authenticated
 function isAuthenticated(): boolean {
-  const userData = getUserData();
+  const userData = getStoreData();
   return userData !== null && userData.isActive;
 }
 
 // Function to clear user data from local storage (logout)
-function clearUserData(): void {
+function clearStoreData(): void {
   localStorage.removeItem(STORAGE_KEY);
 }
 
 // Function to update specific user data fields
-function updateUserData(updates: Partial<UserData>): void {
-  const currentData = getUserData();
+function updateStoreData(updates: Partial<UserData>): void {
+  const currentData = getStoreData();
   if (currentData) {
     const updatedData = { ...currentData, ...updates };
-    setUserData(updatedData);
+    setStoreData(updatedData);
   }
 }
 
 export { 
-  setUserData, 
-  getUserData, 
+  setStoreData, 
+  getStoreData, 
+  getUserData,
   getUserRole, 
   isAuthenticated, 
-  clearUserData, 
-  updateUserData,
+  clearStoreData, 
+  updateStoreData,
   type UserData 
 };
