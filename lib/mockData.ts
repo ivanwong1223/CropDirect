@@ -22,7 +22,7 @@ export interface OrdersData {
 export interface PageVisit {
   pageName: string;
   visitors: number;
-  uniqueUsers: number;
+  uniqueUsers: string;
   bounceRate: string;
   trend: 'up' | 'down';
 }
@@ -66,37 +66,37 @@ export const mockOrdersData: OrdersData[] = [
 // Page visits data
 export const mockPageVisits: PageVisit[] = [
   {
-    pageName: "/seller/dashboard",
+    pageName: "Darren Ng",
     visitors: 4569,
-    uniqueUsers: 340,
+    uniqueUsers: "Sweet Corn",
     bounceRate: "46.53%",
     trend: "up"
   },
   {
-    pageName: "/seller/products",
+    pageName: "Jeremy Lim",
     visitors: 3985,
-    uniqueUsers: 319,
+    uniqueUsers: "Australian Tomatoes",
     bounceRate: "46.53%",
     trend: "down"
   },
   {
-    pageName: "/seller/orders",
+    pageName: "John Paulose",
     visitors: 3513,
-    uniqueUsers: 294,
+    uniqueUsers: "Sweet Corn",
     bounceRate: "36.49%",
     trend: "down"
   },
   {
-    pageName: "/seller/analytics",
+    pageName: "Lionel Messi",
     visitors: 2050,
-    uniqueUsers: 147,
+    uniqueUsers: "Sweet Corn",
     bounceRate: "50.87%",
     trend: "up"
   },
   {
-    pageName: "/seller/profile",
+    pageName: "Soh Zhe Hong",
     visitors: 1795,
-    uniqueUsers: 190,
+    uniqueUsers: "Garlic",
     bounceRate: "46.53%",
     trend: "down"
   }

@@ -1,11 +1,11 @@
 import React from "react";
 import CardStats from "@/components/Cards/CardStats";
 import { mockDashboardStats, mockStatsChanges } from "@/lib/mockData";
+import { getUserData } from "@/lib/localStorage";
 
-/**
- * Header component displaying dashboard statistics cards
- */
+// Header component displaying dashboard statistics cards
 export default function HeaderStats() {
+  const userData = getUserData();
   return (
     <>
       {/* Header */}
@@ -46,7 +46,7 @@ export default function HeaderStats() {
                   statPercent={mockStatsChanges.completedOrders.percent.toString()}
                   statPercentColor="text-orange-500"
                   statDescripiron={mockStatsChanges.completedOrders.period}
-                  statIconName="fas fa-users"
+                  statIconName="fa-solid fa-clipboard-check"
                   statIconColor="bg-pink-500"
                 />
               </div>
