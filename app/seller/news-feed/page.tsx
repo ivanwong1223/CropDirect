@@ -17,11 +17,11 @@ export default function NewsFeedPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<string>('newest');
 
-  // Fetch news data from the API
-  const fetchNewsData = async () => {
+  // Fetch news data from the API based on selected category
+  const fetchNewsData = async (category: string = 'all') => {
     try {
       setLoading(true);
-      const response = await fetch('/api/newsFeed');
+      const response = await fetch(`/api/newsFeed?category=${category}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch news data');
@@ -59,9 +59,10 @@ export default function NewsFeedPage() {
     }
   };
 
-  // Handle category selection (frontend only for now)
+  // Handle category selection and fetch data for selected category
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category);
+    fetchNewsData(category);
   };
 
   // Handle date sort order change
@@ -83,7 +84,7 @@ export default function NewsFeedPage() {
 
   // Fetch news data on component mount
   useEffect(() => {
-    fetchNewsData();
+    fetchNewsData(selectedCategory);
   }, []);
 
   if (loading) {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { NewsArticle, NewsFeedResponse } from "@/lib/mockData";
 
-export async function GET() {
+export async function GET(request: Request) {
   // Array of default agriculture-themed images for null image fallback
   const defaultImages = [
     'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&h=300&fit=crop&crop=center', // Farm field
@@ -22,9 +22,36 @@ export async function GET() {
     return defaultImages[Math.floor(Math.random() * defaultImages.length)];
   };
 
+  // Extract category from URL search params
+  const { searchParams } = new URL(request.url);
+  const category = searchParams.get('category') || 'all';
+
+  /**
+   * Function to map frontend category to API keywords
+   * @param {string} category - The selected category from frontend
+   * @returns {string} Keywords for API call
+   */
+  const getCategoryKeywords = (category: string): string => {
+    switch (category) {
+      case 'crop-specific':
+        return 'crop pricing';
+      case 'plantation':
+        return 'plantation';
+      case 'livestock':
+        return 'livestock';
+      case 'farming':
+        return 'farming';
+      case 'all':
+      default:
+        return 'agriculture';
+    }
+  };
+
+  const keywords = getCategoryKeywords(category);
+
   try {
     const response = await fetch(
-      `http://api.mediastack.com/v1/news?access_key=${process.env.MEDIA_STACK_API_KEY}&keywords=agriculture&languages=en`
+      `http://api.mediastack.com/v1/news?access_key=${process.env.MEDIA_STACK_API_KEY}&keywords=${keywords}&languages=en`
     );
 
     if (!response.ok) {

@@ -15,7 +15,8 @@ import {
   ShoppingCart, 
   TrendingUp, 
   MessageSquare, 
-  Receipt 
+  Receipt,
+  User
 } from 'lucide-react';
 
 interface SellerSidebarProps {
@@ -116,6 +117,8 @@ export default function SellerSidebar({
         return <MessageSquare {...iconProps} />;
       case 'Receipt':
         return <Receipt {...iconProps} />;
+      case 'User':
+        return <User {...iconProps} />;
       default:
         return null;
     }

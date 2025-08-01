@@ -8,8 +8,10 @@ import CardSocialTraffic from "@/components/Cards/CardSocialTraffic";
 import FooterAdmin from "@/components/custom/FooterAdmin";
 import { Button } from "@/components/ui/button";
 import { Plus, FileText } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function SellerDashboard() {
+  const router = useRouter();
   const userData = getUserData();
 
   return (
@@ -32,8 +34,7 @@ export default function SellerDashboard() {
             <Button 
               className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center gap-2 cursor-pointer"
               onClick={() => {
-                // Add navigation logic for adding new product
-                console.log('Add New Product clicked');
+                router.push('/seller/add-product');
               }}
             >
               <Plus className="w-5 h-5" />

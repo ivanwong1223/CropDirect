@@ -72,10 +72,10 @@ const menuData: MenuSection[] = [
         icon: 'Receipt'
       },
       {
-        id: 'my-package',
-        name: 'My Packages',
-        route: '/seller/my-package',
-        icon: 'Package'
+        id: 'my-profile',
+        name: 'My Profile',
+        route: '/seller/my-profile',
+        icon: 'User'
       }
     ]
   },
