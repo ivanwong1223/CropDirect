@@ -33,6 +33,26 @@ export interface TopProduct {
   percentage: number;
 }
 
+// News Feed interfaces
+export interface NewsArticle {
+  title: string;
+  description: string;
+  url: string;
+  source: string;
+  image: string | null;
+  published_at: string;
+}
+
+export interface NewsFeedResponse {
+  pagination: {
+    limit: number;
+    offset: number;
+    count: number;
+    total: number;
+  };
+  data: NewsArticle[];
+}
+
 // Dashboard statistics
 export const mockDashboardStats: DashboardStats = {
   totalSales: 350897,

@@ -55,7 +55,7 @@ const menuData: MenuSection[] = [
       {
         id: 'market',
         name: 'Market Feed',
-        route: '/seller/market',
+        route: '/seller/news-feed',
         icon: 'TrendingUp'
       },
       {
