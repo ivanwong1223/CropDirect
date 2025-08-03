@@ -86,6 +86,8 @@ model Agribusiness {
   businessImage     String?
   // Relationship to KYB form
   kybForm            KYBForm?
+  // Relationship to products
+  products           Product[]
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 }
@@ -172,4 +174,53 @@ model Session {
   expiresAt DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Product status enum
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  OUT_OF_STOCK
+  EXPIRED
+}
+
+// Product model for agricultural products
+model Product {
+  id                    String        @id @default(uuid())
+  agribusinessId        String
+  agribusiness          Agribusiness  @relation(fields: [agribusinessId], references: [id], onDelete: Cascade)
+  
+  // Section A: Product Information
+  productTitle          String
+  cropCategory          String
+  description           String?
+  unitOfMeasurement     String
+  minimumOrderQuantity  Int
+  quantityAvailable     Int
+  
+  // Section B: Pricing & Terms
+  pricing               Decimal       @db.Decimal(10, 2)
+  currency              String        @default("RM")
+  allowBidding          Boolean       @default(false)
+  
+  // Section C: Additional Details & Media
+  storageConditions     String?
+  expiryDate            DateTime?
+  location              String
+  productImages         String[]      @default([]) // Array of image URLs/paths
+  
+  // Section D: Shipping Options
+  shippingMethod        String?
+  directShippingCost    Decimal?      @db.Decimal(10, 2)
+  selectedLogistics     String?
+  
+  // Product status and metadata
+  status                ProductStatus @default(ACTIVE)
+  isActive              Boolean       @default(true)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  
+  @@index([agribusinessId])
+  @@index([cropCategory])
+  @@index([status])
 }

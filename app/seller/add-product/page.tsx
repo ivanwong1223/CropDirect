@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon, Upload, Info, MapPin, Package, DollarSign, Truck, Image as ImageIcon, HelpCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { getUserData } from '@/lib/localStorage';
 
 
 interface FormData {
@@ -190,10 +191,88 @@ export default function AddProduct() {
   };
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('The FormData submitted is: ', formData);
-    // TODO: Implement form submission logic
+    
+    try {
+      // Get current user data from localStorage
+      const userData = getUserData();
+      if (!userData) {
+        alert('Please log in to create a product listing');
+        return;
+      }
+
+      // Get user's agribusiness ID
+      const agribusinessResponse = await fetch(`/api/user/agribusiness?userId=${userData.id}`);
+      const agribusinessData = await agribusinessResponse.json();
+      
+      if (!agribusinessData.success) {
+        alert('Unable to find your agribusiness profile. Please contact support.');
+        return;
+      }
+
+      // Prepare form data for API submission
+      const productData = {
+        agribusinessId: agribusinessData.data.id,
+        productTitle: formData.productTitle,
+        cropCategory: formData.cropCategory,
+        description: formData.description,
+        unitOfMeasurement: formData.unitOfMeasurement,
+        minimumOrderQuantity: formData.minimumOrderQuantity,
+        quantityAvailable: formData.quantityAvailable,
+        pricing: formData.pricing,
+        currency: formData.currency,
+        allowBidding: formData.allowBidding,
+        storageConditions: formData.storageConditions,
+        expiryDate: formData.expiryDate?.toISOString(),
+        location: formData.location,
+        productImages: [], // TODO: Handle image upload
+        shippingMethod: formData.shippingMethod,
+        directShippingCost: formData.directShippingCost,
+        selectedLogistics: formData.selectedLogistics
+      };
+
+      // Submit product data to API
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productData),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert('Product listing created successfully!');
+        // Reset form or redirect to product list
+        setFormData({
+          productTitle: '',
+          cropCategory: '',
+          description: '',
+          unitOfMeasurement: '',
+          minimumOrderQuantity: '',
+          quantityAvailable: '',
+          pricing: '',
+          currency: 'RM',
+          allowBidding: false,
+          storageConditions: '',
+          expiryDate: undefined,
+          location: '',
+          productImages: [],
+          shippingMethod: '',
+          directShippingCost: '',
+          selectedLogistics: ''
+        });
+      } else {
+        alert(`Error creating product: ${result.error}`);
+      }
+
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('An error occurred while creating the product listing. Please try again.');
+    }
   };
 
   const cropCategories = ['Grains', 'Fruits', 'Vegetables', 'Legumes', 'Herbs & Spices', 'Nuts & Seeds'];
@@ -629,7 +708,7 @@ export default function AddProduct() {
           <Button type="button" variant="outline">
             Save as Draft
           </Button>
-          <Button type="submit" className="bg-green-600 hover:bg-green-700">
+          <Button type="submit" className="bg-green-600 hover:bg-green-700 cursor-pointer">
             Upload Product Listing
           </Button>
         </div>
