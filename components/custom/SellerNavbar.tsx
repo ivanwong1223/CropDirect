@@ -45,6 +45,22 @@ export default function SellerNavbar({ className }: SellerNavbarProps) {
     const pathSegments = pathname.split('/').filter(Boolean);
     const breadcrumbs = [];
 
+    // Special handling for specific routes
+    if (pathname === '/seller/add-product') {
+      // For add-product page, show: Products > Add New Product
+      breadcrumbs.push({
+        label: 'Products',
+        href: '/seller/product-list',
+        isActive: false
+      });
+      breadcrumbs.push({
+        label: 'Add New Product',
+        href: '/seller/add-product',
+        isActive: true
+      });
+      return breadcrumbs;
+    }
+
     // Get the current menu item based on the full path
     const fullPath = '/' + pathSegments.join('/');
     const currentMenuItem = getMenuItemByRoute(fullPath);
@@ -97,7 +113,7 @@ export default function SellerNavbar({ className }: SellerNavbarProps) {
 
   return (
     <header className={cn(
-      "sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+      "top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
       className
     )}>
       <div className="flex h-16 items-center justify-between px-6">

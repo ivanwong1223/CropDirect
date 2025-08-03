@@ -19,27 +19,29 @@ export default function SellerLayout({
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <SellerSidebar 
-        sidebarOpen={sidebarOpen} 
-        toggleSidebar={toggleSidebar} 
-      />
-      
-      {/* Main Content Area */}
-      <main 
-        className={`flex-1 flex flex-col transition-all duration-300 ${
-          sidebarOpen ? 'ml-[16.5rem]' : 'ml-0'
-        }`}
-      >
-        {/* Top Navbar */}
-        <SellerNavbar />
+    <>
+      <div className="flex h-screen bg-gray-50">
+        {/* Sidebar */}
+        <SellerSidebar 
+          sidebarOpen={sidebarOpen} 
+          toggleSidebar={toggleSidebar} 
+        />
         
-        {/* Page Content */}
-        <div className="flex-1 overflow-auto">
-          {children}
-        </div>
-      </main>
-    </div>
+        {/* Main Content Area */}
+        <main 
+          className={`flex-1 flex flex-col transition-all duration-300 ${
+            sidebarOpen ? 'ml-[16.5rem]' : 'ml-0'
+          }`}
+        >
+          {/* Top Navbar */}
+          <SellerNavbar />
+          
+          {/* Page Content */}
+          <div className="flex-1">
+            {children}
+          </div>
+        </main>
+      </div>
+    </>
   );
 }

@@ -40,9 +40,9 @@ const menuData: MenuSection[] = [
         icon: 'LayoutDashboard'
       },
       {
-        id: 'add-product',
+        id: 'product-list',
         name: 'Products',
-        route: '/seller/add-product',
+        route: '/seller/product-list',
         icon: 'Package'
       },
       {

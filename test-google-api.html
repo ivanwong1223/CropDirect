@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google Maps API Test</title>
+</head>
+<body>
+    <h1>Google Maps API Test</h1>
+    <input id="autocomplete" type="text" placeholder="Enter a location" style="width: 300px; padding: 10px;">
+    <div id="result"></div>
+
+    <script>
+        function initAutocomplete() {
+            const input = document.getElementById('autocomplete');
+            const autocomplete = new google.maps.places.Autocomplete(input, {
+                types: ['geocode'],
+                componentRestrictions: { country: 'my' }
+            });
+
+            autocomplete.addListener('place_changed', function() {
+                const place = autocomplete.getPlace();
+                document.getElementById('result').innerHTML = 
+                    '<p>Selected: ' + place.formatted_address + '</p>';
+            });
+        }
+
+        window.initAutocomplete = initAutocomplete;
+    </script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDPQoF1iwmwq8p9Z4XgDqmwp_B1hC3nLSc&libraries=places&callback=initAutocomplete"></script>
+</body>
+</html>
