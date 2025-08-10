@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Upload, Info, MapPin, Package, DollarSign, Truck, Image as ImageIcon, HelpCircle } from 'lucide-react';
+import { CalendarIcon, Upload, Info, MapPin, Package, DollarSign, Truck, Image as ImageIcon, HelpCircle, ChevronsUpDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getUserData } from '@/lib/localStorage';
@@ -45,9 +46,17 @@ interface FormData {
 }
 
 export default function AddProduct() {
+  const router = useRouter();
   const locationInputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   
+  // Searchable combobox states for crop category
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [categorySearch, setCategorySearch] = useState('');
+
+  // Validation state for quantity available
+  const [quantityValidationError, setQuantityValidationError] = useState('');
+
   const [formData, setFormData] = useState<FormData>({
     productTitle: '',
     cropCategory: '',
@@ -157,12 +166,42 @@ export default function AddProduct() {
    * @param value - The new value
    */
 
+  /**
+   * Validate quantity available against minimum order quantity
+   * @param quantityAvailable - The quantity available value
+   * @param minimumOrderQuantity - The minimum order quantity value
+   */
+  const validateQuantityAvailable = (quantityAvailable: string, minimumOrderQuantity: string) => {
+    const qty = parseFloat(quantityAvailable);
+    const moq = parseFloat(minimumOrderQuantity);
+    
+    if (quantityAvailable && minimumOrderQuantity && !isNaN(qty) && !isNaN(moq)) {
+      if (qty < moq) {
+        setQuantityValidationError('Quantity Available cannot be less than Minimum Order Quantity');
+        return false;
+      }
+    }
+    setQuantityValidationError('');
+    return true;
+  };
+
   // Make handleInputChange strongly typed so that value matches the type of the selected field
   const handleInputChange = <K extends keyof FormData>(field: K, value: FormData[K]) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => {
+      const newFormData = {
+        ...prev,
+        [field]: value
+      };
+      
+      // Real-time validation for quantity available
+      if (field === 'quantityAvailable' || field === 'minimumOrderQuantity') {
+        const qtyAvailable = field === 'quantityAvailable' ? value as string : prev.quantityAvailable;
+        const minOrderQty = field === 'minimumOrderQuantity' ? value as string : prev.minimumOrderQuantity;
+        validateQuantityAvailable(qtyAvailable, minOrderQty);
+      }
+      
+      return newFormData;
+    });
   };
 
   /**
@@ -190,9 +229,31 @@ export default function AddProduct() {
     }));
   };
 
+  /**
+   * Read a File as a base64 data URL
+   * @param file - The file to convert
+   * @returns Promise that resolves with the data URL string
+   */
+  const readFileAsDataURL = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate quantity available before submission
+    const isQuantityValid = validateQuantityAvailable(formData.quantityAvailable, formData.minimumOrderQuantity);
+    if (!isQuantityValid) {
+      alert('Invalid Quantity Available.');
+      return;
+    }
+    
     console.log('The FormData submitted is: ', formData);
     
     try {
@@ -206,9 +267,20 @@ export default function AddProduct() {
       // Get user's agribusiness ID
       const agribusinessResponse = await fetch(`/api/user/agribusiness?userId=${userData.id}`);
       const agribusinessData = await agribusinessResponse.json();
+      console.log('The agribusinessData is: ', agribusinessData);
       
       if (!agribusinessData.success) {
         alert('Unable to find your agribusiness profile. Please contact support.');
+        return;
+      }
+
+      // Convert images to base64 data URLs for transport
+      let imageData: string[] = [];
+      try {
+        imageData = await Promise.all(formData.productImages.map(readFileAsDataURL));
+      } catch (err) {
+        console.error('Failed to read images', err);
+        alert('Failed to process images. Please try again.');
         return;
       }
 
@@ -227,7 +299,7 @@ export default function AddProduct() {
         storageConditions: formData.storageConditions,
         expiryDate: formData.expiryDate?.toISOString(),
         location: formData.location,
-        productImages: [], // TODO: Handle image upload
+        productImages: imageData,
         shippingMethod: formData.shippingMethod,
         directShippingCost: formData.directShippingCost,
         selectedLogistics: formData.selectedLogistics
@@ -265,6 +337,7 @@ export default function AddProduct() {
           directShippingCost: '',
           selectedLogistics: ''
         });
+        router.push('/seller/product-list');
       } else {
         alert(`Error creating product: ${result.error}`);
       }
@@ -275,10 +348,9 @@ export default function AddProduct() {
     }
   };
 
-  const cropCategories = ['Grains', 'Fruits', 'Vegetables', 'Legumes', 'Herbs & Spices', 'Nuts & Seeds'];
+  const cropCategories = ['Grains', 'Fruits', 'Specialty Coffee', 'Vegetables', 'Legumes', 'Herbs & Spices', 'Nuts & Seeds', 'Rice', 'Livestock', 'Wheat', 'Corn', 'Barley', 'Oats', 'Soybean', 'Cotton', 'Fabric', 'Cloth', 'Leather', 'Metal', 'Plastic', 'Glass', 'Wood', 'Paper', 'Cardboard'];
   const units = ['kg', 'ton', 'sack', 'crate', 'box', 'piece'];
   const currencies = ['RM', 'USD', 'SGD'];
-  const locations = ['Kuala Lumpur', 'Selangor', 'Penang', 'Johor', 'Perak', 'Kedah', 'Kelantan', 'Terengganu', 'Pahang', 'Negeri Sembilan', 'Melaka', 'Sabah', 'Sarawak'];
   
   const logisticsProviders = [
     { 
@@ -338,18 +410,50 @@ export default function AddProduct() {
               
               <div className="space-y-3">
                 <Label htmlFor="cropCategory">Crop Category<span className='text-red-500'>*</span></Label>
-                <Select value={formData.cropCategory} onValueChange={(value) => handleInputChange('cropCategory', value)}>
-                  <SelectTrigger className="w-full bg-white border-1 border-gray-300">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cropCategories.map((category) => (
-                      <SelectItem key={category} value={category.toLowerCase()}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={categoryOpen}
+                      className="w-full justify-between bg-white border-1 border-gray-300 font-light tracking-wide"
+                      onClick={() => setCategoryOpen((prev) => !prev)}
+                    >
+                      {(() => {
+                        const selected = cropCategories.find(c => c.toLowerCase() === formData.cropCategory);
+                        return selected ? selected : 'Select category';
+                      })()}
+                      <ChevronsUpDown className="opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-2">
+                    <Input
+                      placeholder="Search category..."
+                      value={categorySearch}
+                      onChange={(e) => setCategorySearch(e.target.value)}
+                      className="mb-2 bg-white border-1 border-gray-300"
+                    />
+                    <div className="max-h-56 overflow-y-auto">
+                      {cropCategories
+                        .filter((c) => c.toLowerCase().includes(categorySearch.toLowerCase()))
+                        .map((category) => (
+                          <button
+                            type="button"
+                            key={category}
+                            className={`w-full text-left px-3 py-2 rounded hover:bg-gray-100 ${formData.cropCategory === category.toLowerCase() ? 'bg-gray-100' : ''}`}
+                            onClick={() => {
+                              handleInputChange('cropCategory', category.toLowerCase() as FormData['cropCategory']);
+                              setCategoryOpen(false);
+                              setCategorySearch(''); // Clear search when selection is made
+                            }}
+                          >
+                            {category}
+                          </button>
+                        ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
@@ -434,8 +538,11 @@ export default function AddProduct() {
                   value={formData.quantityAvailable}
                   onChange={(e) => handleInputChange('quantityAvailable', e.target.value)}
                   required
-                  className="bg-white border-1 border-gray-300"
+                  className={`bg-white border-1 ${quantityValidationError ? 'border-red-500' : 'border-gray-300'}`}
                 />
+                {quantityValidationError && (
+                  <p className="text-sm text-red-500 mt-1">{quantityValidationError}</p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -490,7 +597,7 @@ export default function AddProduct() {
                     id="allowBidding"
                     checked={formData.allowBidding}
                     onCheckedChange={(checked) => handleInputChange('allowBidding', checked)}
-                    className="data-[state=checked]:bg-green-500"
+                    className="data-[state=checked]:bg-green-500 cursor-pointer"
                   />
                   <Label htmlFor="allowBidding" className="text-sm">
                     Enable if you want buyers to bid for your product
@@ -550,7 +657,7 @@ export default function AddProduct() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location" className="text-sm font-semibold text-gray-700">Location of Crop / Pickup Point *</Label>
+              <Label htmlFor="location" className="text-sm font-semibold text-gray-700">Location of Crop / Pickup Point<span className='text-red-500'>*</span></Label>
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-gray-500" />
                 <div className="flex-1">
@@ -596,10 +703,11 @@ export default function AddProduct() {
                 <div className="grid grid-cols-3 gap-4">
                   {formData.productImages.map((file, index) => (
                     <div key={index} className="relative border-2 border-gray-200 rounded-lg shadow-sm bg-white">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={URL.createObjectURL(file)}
                         alt={`Product ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg"
+                        className="w-full h-full object-cover rounded-lg"
                       />
                       <Button
                         type="button"
