@@ -1,14 +1,25 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator"
-import { Package, Plus, MapPin, Tag, Layers, ShoppingBasket, Edit, Trash2 } from "lucide-react";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
+import { Package, Plus, MapPin, Tag, Layers, ShoppingBasket, Edit, Trash2, CheckCircle } from "lucide-react";
 import { getUserData } from "@/lib/localStorage";
+import { AnimatedList } from "@/components/magicui/animated-list";
 
 interface ProductItem {
   id: string;
@@ -23,6 +34,7 @@ interface ProductItem {
   productImages: string[];
   shippingMethod?: string | null;
   selectedLogistics?: string | null;
+  directShippingCost?: string | null;
   createdAt: string;
   agribusiness?: {
     businessName: string;
@@ -33,9 +45,13 @@ interface ProductItem {
 
 export default function ProductList() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [products, setProducts] = useState<ProductItem[]>([]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<React.ReactNode[]>([]);
 
   // Format a string to Title Case
   const titleCase = (s: string) => s.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase());
@@ -53,20 +69,67 @@ export default function ProductList() {
     return text.length > max ? `${text.slice(0, max)}...` : text;
   };
 
-  const handleDelete = async (id: string) => {
-    const confirmed = window.confirm("Are you sure you want to delete this product? This action cannot be undone.");
-    if (!confirmed) return;
+  const askDelete = (id: string) => {
+    setPendingDeleteId(id);
+    setConfirmOpen(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!pendingDeleteId) return;
     try {
-      const resp = await fetch(`/api/products/${id}`, { method: "DELETE" });
+      const resp = await fetch(`/api/products/${pendingDeleteId}`, { method: "DELETE" });
       const data = await resp.json();
       if (!resp.ok || !data?.success) {
         throw new Error(data?.error || "Failed to delete product");
       }
-      setProducts((prev) => prev.filter((p) => p.id !== id));
+      setProducts((prev) => prev.filter((p) => p.id !== pendingDeleteId));
+
+      // push a new notification using AnimatedList item pattern
+      const ts = new Date().toLocaleTimeString();
+      setNotifications((prev) => [
+        <div 
+          key={`del-${pendingDeleteId}-${Date.now()}`} 
+          className="flex items-start gap-3 rounded-md border bg-white p-3 shadow-sm opacity-100 transition-opacity duration-300"
+          onAnimationEnd={() => {
+            setTimeout(() => {
+              setNotifications(prev => prev.slice(1));
+            }, 3000);
+          }}
+          style={{
+            animation: 'fadeOut 300ms ease-in-out 3s forwards'
+          }}
+        >
+          <style jsx>{`
+            @keyframes fadeOut {
+              from { opacity: 1; }
+              to { opacity: 0; }
+            }
+          `}</style>
+          <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+          <div className="min-w-0">
+            <div className="text-sm font-medium">Deleted Successfully</div>
+            <div className="text-xs text-gray-600">The product has been removed. {ts}</div>
+          </div>
+        </div>,
+        ...prev,
+      ]);
     } catch (e) {
       console.error(e);
-      alert("Failed to delete product. Please try again.");
+      // show error notification
+      const ts = new Date().toLocaleTimeString();
+      setNotifications((prev) => [
+        <div key={`err-${pendingDeleteId}-${Date.now()}`} className="flex items-start gap-3 rounded-md border bg-white p-3 shadow-sm">
+          <Trash2 className="h-5 w-5 text-red-600 mt-0.5" />
+          <div className="min-w-0">
+            <div className="text-sm font-medium text-red-700">Failed to delete</div>
+            <div className="text-xs text-gray-600">Please try again. {ts}</div>
+          </div>
+        </div>,
+        ...prev,
+      ]);
+    } finally {
+      setConfirmOpen(false);
+      setPendingDeleteId(null);
     }
   };
 
@@ -113,10 +176,74 @@ export default function ProductList() {
     fetchProducts();
   }, []);
 
+  // Check for success notification from URL params
+  useEffect(() => {
+    const created = searchParams.get('created');
+    const productTitle = searchParams.get('productTitle');
+    
+    if (created === 'true' && productTitle) {
+      // Show success notification only once
+      setNotifications((prev) => {
+        // Check if notification already exists to prevent duplicates
+        const existingNotification = prev.find(n => 
+          n && typeof n === 'object' && 'key' in n && 
+          typeof n.key === 'string' && n.key.startsWith('created-')
+        );
+        
+        if (existingNotification) {
+          return prev; // Don't add duplicate
+        }
+        
+        return [
+          <div 
+            key={`created-${Date.now()}`} 
+            className="flex items-start gap-3 rounded-md border bg-white p-3 shadow-sm opacity-100 transition-opacity duration-300"
+            onAnimationEnd={() => {
+              setTimeout(() => {
+                setNotifications(prev => prev.slice(1));
+              }, 3000);
+            }}
+            style={{
+              animation: 'fadeOut 300ms ease-in-out 3s forwards'
+            }}
+          >
+            <style jsx>{`
+              @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+              }
+            `}</style>
+            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+            <div className="min-w-0">
+              <div className="text-sm font-medium">Product Created Successfully</div>
+              <div className="text-xs text-gray-600">{decodeURIComponent(productTitle)} has been created.</div>
+            </div>
+          </div>,
+          ...prev,
+        ];
+      });
+      
+      // Clean up URL params
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('created');
+      newUrl.searchParams.delete('productTitle');
+      window.history.replaceState({}, '', newUrl.toString());
+    }
+  }, [searchParams]);
+
   const hasProducts = useMemo(() => products && products.length > 0, [products]);
 
   return (
-    <div className="px-6 py-8 max-w-7xl mx-auto">
+    <div className="px-6 py-8 max-w-7xl mx-auto relative">
+      {/* Top-right notifications */}
+      <div className="pointer-events-none fixed right-4 top-4 z-[60] w-80">
+        <AnimatedList delay={1200} className="items-end">
+          {notifications.map((n, i) => (
+            <div key={i} className="pointer-events-auto">{n}</div>
+          ))}
+        </AnimatedList>
+      </div>
+
       <div className="mb-6 flex items-center justify-between mt-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-1">Your Product List</h1>
@@ -225,24 +352,31 @@ export default function ProductList() {
                         Shipping: {isThirdParty ? (
                           <>Third-party{p.selectedLogistics ? ` (${p.selectedLogistics.toUpperCase()})` : ""}</>
                         ) : (
-                          p.shippingMethod
+                          <>
+                            {p.shippingMethod}
+                            {p.directShippingCost && ` - ${p.currency || 'RM'}${p.directShippingCost}`}
+                          </>
                         )}
                       </span>
                     </div>
                   )}
-                  <div className="">
+                  <div>
                     <Separator />
                   </div>
-                  <div className="pt-2 flex items-center gap-2">
-                    <Button className="cursor-pointer" variant="outline" size="icon" aria-label="Edit" onClick={() => router.push(`/seller/edit-product/${p.id}`)}>
-                      <Edit className="h-4 w-4" />
+                  <div className="pt-2 flex items-center justify-between gap-2">
+                    <Button 
+                      className="cursor-pointer" 
+                      variant="outline"
+                      onClick={() => router.push(`/seller/edit-product/${p.id}`)}
+                    >
+                      View Details
                     </Button>
                     <Button
                       variant="outline"
                       size="icon"
                       aria-label="Delete"
                       className="text-red-600 border-red-200 hover:bg-red-50 cursor-pointer"
-                      onClick={() => handleDelete(p.id)}
+                      onClick={() => askDelete(p.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -253,6 +387,24 @@ export default function ProductList() {
           })}
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this product?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the product.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="cursor-pointer" onClick={() => setConfirmOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 cursor-pointer">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

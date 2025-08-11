@@ -46,18 +46,26 @@ export default function SellerNavbar({ className }: SellerNavbarProps) {
     const breadcrumbs = [];
 
     // Special handling for specific routes
-    if (pathname === '/seller/add-product') {
-      // For add-product page, show: Products > Add New Product
+    if (pathname === '/seller/add-product' || pathname.startsWith('/seller/edit-product/')) {
       breadcrumbs.push({
         label: 'Products',
         href: '/seller/product-list',
         isActive: false
       });
-      breadcrumbs.push({
-        label: 'Add New Product',
-        href: '/seller/add-product',
-        isActive: true
-      });
+      
+      if (pathname === '/seller/add-product') {
+        breadcrumbs.push({
+          label: 'Add New Product',
+          href: '/seller/add-product',
+          isActive: true
+        });
+      } else {
+        breadcrumbs.push({
+          label: 'Edit Product',
+          href: pathname,
+          isActive: true
+        });
+      }
       return breadcrumbs;
     }
 

@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Upload, Info, MapPin, Package, DollarSign, Truck, Image as ImageIcon, HelpCircle, ChevronsUpDown } from 'lucide-react';
+import { CalendarIcon, Upload, Info, MapPin, Package, DollarSign, Truck, Image as ImageIcon, HelpCircle, ChevronsUpDown, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getUserData } from '@/lib/localStorage';
@@ -56,6 +56,8 @@ export default function AddProduct() {
 
   // Validation state for quantity available
   const [quantityValidationError, setQuantityValidationError] = useState('');
+
+
 
   const [formData, setFormData] = useState<FormData>({
     productTitle: '',
@@ -317,7 +319,8 @@ export default function AddProduct() {
       const result = await response.json();
 
       if (result.success) {
-        alert('Product listing created successfully!');
+        const productTitle = formData.productTitle || 'Your product';
+
         // Reset form or redirect to product list
         setFormData({
           productTitle: '',
@@ -337,14 +340,16 @@ export default function AddProduct() {
           directShippingCost: '',
           selectedLogistics: ''
         });
-        router.push('/seller/product-list');
+        // Redirect to product list with success notification data
+        router.push(`/seller/product-list?created=true&productTitle=${encodeURIComponent(productTitle)}`);
       } else {
-        alert(`Error creating product: ${result.error}`);
+        alert(`Failed to create product: ${result.error || 'Please try again.'}`);
+        console.error('Product creation failed:', result.error);
       }
 
     } catch (error) {
       console.error('Error submitting form:', error);
-      alert('An error occurred while creating the product listing. Please try again.');
+      alert('An error occurred while creating the product. Please try again.');
     }
   };
 
@@ -813,7 +818,7 @@ export default function AddProduct() {
 
         {/* Submit Button */}
         <div className="flex justify-end space-x-4">
-          <Button type="button" variant="outline">
+          <Button type="button" variant="outline" className="cursor-pointer">
             Save as Draft
           </Button>
           <Button type="submit" className="bg-green-600 hover:bg-green-700 cursor-pointer">
