@@ -54,6 +54,16 @@ export async function POST(request: NextRequest) {
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
+    // Define default profile images
+    const defaultImages = [
+      "https://avatars.githubusercontent.com/u/106103625",
+      "https://avatars.githubusercontent.com/u/59442788",
+      "https://avatars.githubusercontent.com/u/59228569"
+    ];
+    
+    // Randomly select an image
+    const randomImage = defaultImages[Math.floor(Math.random() * defaultImages.length)];
+
     // Create user and agribusiness profile in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create user record
@@ -77,7 +87,14 @@ export async function POST(request: NextRequest) {
           country,
           state,
           kybStatus: "NOT_SUBMITTED",
-          subscriptionTier: "FREE",
+          businessImage: randomImage,
+          subscription: {
+            create: {
+              tier: "FREE",
+              status: "ACTIVE",
+              billingCycle: "MONTHLY"
+            }
+          },
           isKybVerified: false
         }
       });
@@ -102,7 +119,13 @@ export async function POST(request: NextRequest) {
           country: result.agribusiness.country,
           state: result.agribusiness.state,
           kybStatus: result.agribusiness.kybStatus,
-          subscriptionTier: result.agribusiness.subscriptionTier
+          businessImage: result.agribusiness.businessImage,
+          // Include subscription information
+          subscription: {
+            tier: "FREE",
+            status: "ACTIVE",
+            billingCycle: "MONTHLY"
+          }
         }
       }
     }, { status: 201 });

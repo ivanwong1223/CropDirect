@@ -61,21 +61,21 @@ const menuData: MenuSection[] = [
       {
         id: 'message',
         name: 'Messages',
-        route: '/seller/chatbox',
+        route: '/seller/chat-box',
         badge: '5',
         icon: 'MessageSquare'
       },
       {
         id: 'payment-history',
-        name: 'Payment History',
-        route: '/seller/payment-history',
+        name: 'Sales Income',
+        route: '/seller/payments',
         icon: 'Receipt'
       },
       {
-        id: 'my-profile',
-        name: 'My Profile',
-        route: '/seller/my-profile',
-        icon: 'User'
+        id: 'my-subscription',
+        name: 'Subscriptions',
+        route: '/seller/my-subscription',
+        icon: 'ShoppingBag'
       }
     ]
   },

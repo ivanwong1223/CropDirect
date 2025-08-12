@@ -27,8 +27,34 @@ export async function GET(request: NextRequest) {
         primaryCropCategory: true,
         country: true,
         state: true,
+        bio: true,
+        businessImage: true,
+        facebookUrl: true,
+        instagramUrl: true,
+        websiteUrl: true,
         kybStatus: true,
-        subscriptionTier: true,
+        // Get subscription information instead of subscriptionTier
+        subscription: {
+          select: {
+            tier: true,
+            status: true,
+            billingCycle: true,
+            nextBillingDate: true,
+            billingHistory: {
+              select: {
+                id: true,
+                amount: true,
+                paidAt: true,
+                tier: true,
+                paymentStatus: true
+              },
+              orderBy: {
+                paidAt: 'desc'
+              },
+              take: 5
+            }
+          }
+        },
         isKybVerified: true,
         user: {
           select: {
@@ -37,7 +63,7 @@ export async function GET(request: NextRequest) {
             email: true,
             role: true
           }
-        }
+        },
       }
     });
 

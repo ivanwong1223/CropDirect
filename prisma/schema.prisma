@@ -52,20 +52,6 @@ model FrequentlyAskedQuestion {
 }
 
 // Agribusiness profile
-// model Agribusiness {
-//   id                 String             @id @default(uuid())
-//   userId             String             @unique
-//   user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-//   businessName       String
-//   contactName        String
-//   businessAddress    String
-//   tradingType       String
-//   subscriptionTier   String             @default("FREE")
-//   isKybVerified      Boolean            @default(false)
-//   createdAt          DateTime           @default(now())
-//   updatedAt          DateTime           @updatedAt
-// }
-
 model Agribusiness {
   id                 String             @id @default(uuid())
   userId             String             @unique
@@ -84,10 +70,21 @@ model Agribusiness {
   bio               String?
   contactNo            String?
   businessImage     String?
+  
+  // Social Media Links
+  facebookUrl       String?
+  instagramUrl      String?
+  websiteUrl        String?
   // Relationship to KYB form
   kybForm            KYBForm?
   // Relationship to products
   products           Product[]
+  // Relationship to orders  
+  orders             Order[]
+  // Relationship to sales transactions
+  salesTransactions  SalesTransaction[]
+  // Relationship to subscription
+  subscription       Subscription?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 }
@@ -132,6 +129,8 @@ model BusinessBuyer {
   verificationStatus      VerificationStatus @default(PENDING)
   loyaltyPoints           Int                @default(0)
   preferredPaymentMethods String[]           @default([])
+  // Relationship to orders
+  orders                  Order[]
   createdAt               DateTime           @default(now())
   updatedAt               DateTime           @updatedAt
 }
@@ -220,7 +219,118 @@ model Product {
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   
+  // Relationships
+  orders                Order[]
+  
   @@index([agribusinessId])
   @@index([cropCategory])
   @@index([status])
+}
+
+// Order model to represent a purchase made by a BusinessBuyer for a Product
+model Order {
+  id               String         @id @default(uuid())
+  orderId          String         @unique
+  buyerId          String
+  buyer            BusinessBuyer  @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  agribusinessId   String
+  agribusiness     Agribusiness   @relation(fields: [agribusinessId], references: [id], onDelete: Cascade)
+  quantity         Int
+  unitPrice        Decimal        @db.Decimal(10, 2)
+  currency         String         @default("RM")
+  paymentMethod    String
+  // derived total = unitPrice * quantity (store snapshot)
+  totalAmount      Decimal        @db.Decimal(12, 2)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  // Relationship
+  transactions     SalesTransaction[]
+
+  @@index([buyerId])
+  @@index([productId])
+  @@index([agribusinessId])
+}
+
+// SalesTransaction model represents a completed payment to the seller for an order
+model SalesTransaction {
+  id               String    @id @default(uuid())
+  invoiceId        String    @unique
+  orderId          String
+  order            Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  agribusinessId   String
+  agribusiness     Agribusiness @relation(fields: [agribusinessId], references: [id], onDelete: Cascade)
+  amountPaid       Decimal   @db.Decimal(12, 2)
+  paymentMethod    String
+  // duplicate reference fields for quick access in table views
+  productTitle     String
+  quantity         Int
+  paidAt           DateTime  @default(now())
+
+  @@index([agribusinessId])
+  @@index([orderId])
+  @@index([paidAt])
+}
+
+// Subscription model for managing subscription plans
+model Subscription {
+  id               String            @id @default(uuid())
+  agribusinessId   String            @unique
+  agribusiness     Agribusiness      @relation(fields: [agribusinessId], references: [id], onDelete: Cascade)
+  tier             SubscriptionTier  @default(FREE)
+  billingCycle     BillingCycle      @default(MONTHLY)
+  status           SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  nextBillingDate    DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  
+  // Relationship to billing history
+  billingHistory   BillingHistory[]
+}
+
+// Billing History model
+model BillingHistory {
+  id             String       @id @default(uuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  tier           SubscriptionTier
+  amount         Decimal      @db.Decimal(10, 2)
+  currency       String       @default("RM")
+  billingCycle   BillingCycle
+  paymentStatus  PaymentStatus @default(PENDING)
+  paidAt         DateTime?
+  createdAt      DateTime     @default(now())
+  
+  @@index([subscriptionId])
+  @@index([createdAt])
+}
+
+// Enums for subscription management
+enum SubscriptionTier {
+  FREE
+  STANDARD
+  ELITE
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  SUSPENDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
 }

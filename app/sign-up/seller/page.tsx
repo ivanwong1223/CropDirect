@@ -267,10 +267,10 @@ export default function SellerSignUpPage() {
                     <SelectValue placeholder="Select type" className="pl-10" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="farmer">Farmer/Producer</SelectItem>
-                    <SelectItem value="wholesaler">Wholesaler</SelectItem>
-                    <SelectItem value="exporter">Exporter</SelectItem>
-                    <SelectItem value="processor">Processor</SelectItem>
+                    <SelectItem value="Farmer">Farmer/Producer</SelectItem>
+                    <SelectItem value="Wholesaler">Wholesaler</SelectItem>
+                    <SelectItem value="Exporter">Exporter</SelectItem>
+                    <SelectItem value="Processor">Processor</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -284,12 +284,12 @@ export default function SellerSignUpPage() {
                     <SelectValue placeholder="Select category" className="pl-10" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="grains">Grains & Cereals</SelectItem>
-                    <SelectItem value="wheats">Wheats</SelectItem>
-                    <SelectItem value="coffee">Specialty Coffee</SelectItem>
-                    <SelectItem value="fruits">Fruits</SelectItem>
-                    <SelectItem value="livestock">Livestock</SelectItem>
-                    <SelectItem value="fishery">Fishery</SelectItem>
+                    <SelectItem value="Grains & Cereals">Grains & Cereals</SelectItem>
+                    <SelectItem value="Wheats">Wheats</SelectItem>
+                    <SelectItem value="Specialty Coffee">Specialty Coffee</SelectItem>
+                    <SelectItem value="Fruits">Fruits</SelectItem>
+                    <SelectItem value="Livestock">Livestock</SelectItem>
+                    <SelectItem value="Fishery">Fishery</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

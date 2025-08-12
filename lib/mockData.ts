@@ -1,5 +1,3 @@
-// Mock data for CropDirect Seller Dashboard
-
 export interface DashboardStats {
   totalSales: number;
   pendingOrders: number;
@@ -51,6 +49,19 @@ export interface NewsFeedResponse {
     total: number;
   };
   data: NewsArticle[];
+}
+
+// Sales Transaction interface for payments page
+export interface SalesTransaction {
+  id: string;
+  invoiceId: string;
+  orderId: string;
+  productTitle: string;
+  quantity: number;
+  paymentMethod: string;
+  amountPaid: number;
+  currency: string;
+  paidAt: string;
 }
 
 // Dashboard statistics
@@ -158,3 +169,95 @@ export const mockStatsChanges = {
   completedOrders: { percent: 1.10, trend: "down" as const, period: "Since yesterday" },
   performance: { percent: 12, trend: "up" as const, period: "Since last month" }
 };
+
+// Mock sales transactions for payments page
+export const mockSalesTransactions: SalesTransaction[] = [
+  {
+    id: "1",
+    invoiceId: "INV-2024-001",
+    orderId: "ORD-2024-001",
+    productTitle: "Premium Fresh Tomatoes",
+    quantity: 50,
+    paymentMethod: "Credit Card",
+    amountPaid: 1250.00,
+    currency: "RM",
+    paidAt: "2024-01-15T10:30:00.000Z"
+  },
+  {
+    id: "2",
+    invoiceId: "INV-2024-002",
+    orderId: "ORD-2024-002", 
+    productTitle: "Organic Sweet Corn",
+    quantity: 30,
+    paymentMethod: "Bank Transfer",
+    amountPaid: 890.50,
+    currency: "RM",
+    paidAt: "2024-01-14T14:22:00.000Z"
+  },
+  {
+    id: "3",
+    invoiceId: "INV-2024-003",
+    orderId: "ORD-2024-003",
+    productTitle: "Fresh Bell Peppers",
+    quantity: 25,
+    paymentMethod: "Online Banking",
+    amountPaid: 675.25,
+    currency: "RM",
+    paidAt: "2024-01-13T09:15:00.000Z"
+  },
+  {
+    id: "4",
+    invoiceId: "INV-2024-004", 
+    orderId: "ORD-2024-004",
+    productTitle: "Premium Lettuce",
+    quantity: 40,
+    paymentMethod: "PayPal",
+    amountPaid: 980.00,
+    currency: "RM",
+    paidAt: "2024-01-12T16:45:00.000Z"
+  },
+  {
+    id: "5",
+    invoiceId: "INV-2024-005",
+    orderId: "ORD-2024-005",
+    productTitle: "Organic Carrots",
+    quantity: 60,
+    paymentMethod: "Credit Card",
+    amountPaid: 1380.75,
+    currency: "RM",
+    paidAt: "2024-01-11T11:20:00.000Z"
+  },
+  {
+    id: "6",
+    invoiceId: "INV-2024-006",
+    orderId: "ORD-2024-006",
+    productTitle: "Fresh Spinach",
+    quantity: 35,
+    paymentMethod: "Bank Transfer",
+    amountPaid: 595.30,
+    currency: "RM",
+    paidAt: "2024-01-10T13:10:00.000Z"
+  },
+  {
+    id: "7",
+    invoiceId: "INV-2024-007",
+    orderId: "ORD-2024-007",
+    productTitle: "Premium Broccoli",
+    quantity: 28,
+    paymentMethod: "Online Banking",
+    amountPaid: 756.80,
+    currency: "RM",
+    paidAt: "2024-01-09T08:30:00.000Z"
+  },
+  {
+    id: "8",
+    invoiceId: "INV-2024-008",
+    orderId: "ORD-2024-008",
+    productTitle: "Organic Cabbage",
+    quantity: 45,
+    paymentMethod: "Credit Card",
+    amountPaid: 1123.25,
+    currency: "RM",
+    paidAt: "2024-01-08T15:55:00.000Z"
+  }
+];

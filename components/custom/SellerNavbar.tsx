@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Search, Bell, Settings, User } from 'lucide-react';
@@ -31,11 +31,37 @@ interface SellerNavbarProps {
   className?: string;
 }
 
+interface AgribusinessData {
+  businessName: string;
+  businessImage: string;
+}
+
 export default function SellerNavbar({ className }: SellerNavbarProps) {
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState('');
-  const [notificationCount] = useState(3); // Mock notification count
+  const [notificationCount] = useState(3);
+  const [agribusinessData, setAgribusinessData] = useState<AgribusinessData>();
   const userData = getUserData();
+
+  useEffect(() => {
+    async function fetchAgribusinessData() {
+      if (userData?.id) {
+        try {
+          const response = await fetch(`/api/user/agribusiness?userId=${userData.id}`);
+          const result = await response.json();
+          if (result.success && result.data) {
+            setAgribusinessData({
+              businessName: result.data.businessName,
+              businessImage: result.data.businessImage
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching agribusiness data:', error);
+        }
+      }
+    }
+    fetchAgribusinessData();
+  }, [userData?.id]);
 
   // Get menu items from the store
   const getMenuItemByRoute = useMenuStore(state => state.getMenuItemByRoute);
@@ -66,6 +92,29 @@ export default function SellerNavbar({ className }: SellerNavbarProps) {
           isActive: true
         });
       }
+      return breadcrumbs;
+    }
+
+    if (pathname === '/seller/my-profile') {
+      breadcrumbs.push({
+        label: 'My Profile',
+        href: '/seller/my-profile',
+        isActive: true
+      });
+      return breadcrumbs;
+    }
+
+    if (pathname === '/seller/change-password') {
+      breadcrumbs.push({
+        label: 'My Profile',
+        href: '/seller/my-profile',
+        isActive: false
+      });
+      breadcrumbs.push({
+        label: 'Change Password',
+        href: '/seller/change-password',
+        isActive: true
+      });
       return breadcrumbs;
     }
 
@@ -205,14 +254,30 @@ export default function SellerNavbar({ className }: SellerNavbarProps) {
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center space-x-3 p-2 rounded-md hover:bg-accent transition-colors">
               <Avatar className="h-8 w-8">
-                {/* <AvatarImage src="/placeholder-avatar.jpg" alt="John Paulose" />
-                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
-                  JP
-                </AvatarFallback> */}
-                <AvatarImage src="https://avatars.githubusercontent.com/u/59442788" alt="User Avatar" />
+                <AvatarImage 
+                  src={agribusinessData?.businessImage} 
+                  alt={agribusinessData?.businessName}
+                />
+                <AvatarFallback className="bg-gray-200">
+                  <svg
+                    className="h-4 w-4 text-gray-500"
+                    fill="none"
+                    height="24"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </AvatarFallback>
               </Avatar>
               <div className="flex flex-col items-start">
-                {userData && userData.name && (
+                {userData?.name && (
                   <span className="text-sm font-medium text-foreground">{userData.name}</span>
                 )}
                 <span className="text-xs text-muted-foreground">Seller</span>
@@ -221,7 +286,7 @@ export default function SellerNavbar({ className }: SellerNavbarProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem asChild>
-                <Link href="/seller/profile" className="flex items-center">
+                <Link href="/seller/my-profile" className="flex items-center">
                   <User className="mr-2 h-4 w-4" />
                   Profile
                 </Link>

@@ -8,7 +8,8 @@ import { useMenuStore, MenuItem, MenuSection } from '@/stores/menu';
 import { cn } from '@/lib/utils';
 import { 
   SidebarClose, 
-  Settings, 
+  Settings,
+  ShoppingBag, 
   LogOut, 
   LayoutDashboard, 
   Package, 
@@ -84,7 +85,7 @@ export default function SellerSidebar({
 
   // Handle settings and logout navigation
   const handleSettingsClick = () => {
-    router.push('/settings');
+    router.push('/seller/my-profile');
     setActiveMenuItem('');
   };
 
@@ -117,8 +118,8 @@ export default function SellerSidebar({
         return <MessageSquare {...iconProps} />;
       case 'Receipt':
         return <Receipt {...iconProps} />;
-      case 'User':
-        return <User {...iconProps} />;
+      case 'ShoppingBag':
+        return <ShoppingBag {...iconProps} />;
       default:
         return null;
     }
@@ -196,8 +197,8 @@ export default function SellerSidebar({
             className="flex items-center text-white text-sm no-underline hover:text-gray-400 ml-5 cursor-pointer"
             onClick={handleSettingsClick}
           >
-            <Settings className="mr-2 stroke-[1.5px] h-5 w-5" />
-            Settings
+            <User className="mr-2 stroke-[1.5px] h-5 w-5" />
+            My Profile
           </button>
           
           {/* Logout Button */}
