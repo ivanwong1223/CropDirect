@@ -1,3 +1,44 @@
+/**
+ * Payment-related type definitions for Stripe integration
+ */
+
+// Payment result interface for successful payments
+export interface PaymentResult {
+  paymentIntentId: string;
+  planId: string;
+  billingCycle: 'monthly' | 'yearly';
+  amount: number;
+  currency?: string;
+  success?: boolean;
+}
+
+// Payment status types
+export type PaymentStatus = 'idle' | 'processing' | 'success' | 'error';
+
+// Stripe payment intent response
+export interface StripePaymentIntentResponse {
+  clientSecret: string;
+  paymentIntentId: string;
+}
+
+// Payment confirmation response
+export interface PaymentConfirmationResponse {
+  success: boolean;
+  paymentStatus: string;
+  planId?: string;
+  billingCycle?: 'monthly' | 'yearly';
+  amount?: number;
+  currency?: string;
+  error?: string;
+}
+
+// Payment error interface
+export interface PaymentError {
+  type?: string;
+  code?: string;
+  message: string;
+}
+
 export interface DashboardStats {
   totalSales: number;
   pendingOrders: number;
@@ -130,6 +171,80 @@ export const mockPageVisits: PageVisit[] = [
     uniqueUsers: "Garlic",
     bounceRate: "46.53%",
     trend: "down"
+  }
+];
+
+// Subscription Plan interfaces
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description: string;
+  price: {
+    monthly: number;
+    yearly: number;
+  };
+  icon: string;
+  features: string[];
+  isPopular?: boolean;
+  trialDays: number;
+}
+
+// Mock subscription plans data
+export const mockSubscriptionPlans: SubscriptionPlan[] = [
+  {
+    id: "free",
+    name: "Basic",
+    description: "Perfect for new producer starting their digital journey",
+    price: {
+      monthly: 0,
+      yearly: 0 // 15% discount applied
+    },
+    icon: "/icons/startup.svg",
+    features: [
+      "Up to 3 Product Listings",
+      "3 Product Images per Listing",
+      "Access Agricultural News-feed",
+      "Generate Performance Reports"
+    ],
+    trialDays: 14
+  },
+  {
+    id: "standard",
+    name: "Standard",
+    description: "Ideal for growing agricultural businesses",
+    price: {
+      monthly: 30,
+      yearly: 27 // 15% discount applied
+    },
+    icon: "/icons/shield-plus.svg",
+    features: [
+      "Up to 10 Product Listings",
+      "5 Product Images per Listing",
+      "Access Agricultural News-feed",
+      "Generate Performance Reports",
+      "Upload Social Media Links"
+    ],
+    isPopular: true,
+    trialDays: 14
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    description: "For established farming operations",
+    price: {
+      monthly: 50,
+      yearly: 40 // 15% discount applied
+    },
+    icon: "/icons/enterprise.svg",
+    features: [
+      "Unlimited Product Listings",
+      "10 Product Images per Listing",
+      "Access Agricultural News-feed",
+      "Generate Performance Reports",
+      "Upload Social Media Links",
+      "Featured Product Placement on Buyer Homepage"
+    ],
+    trialDays: 14
   }
 ];
 

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Package, Plus, MapPin, Tag, Layers, ShoppingBasket, Edit, Trash2, CheckCircle } from "lucide-react";
 import { getUserData } from "@/lib/localStorage";
-import { AnimatedList } from "@/components/magicui/animated-list";
+import NotificationContainer from "@/components/custom/NotificationContainer";
 
 interface ProductItem {
   id: string;
@@ -93,10 +93,10 @@ export default function ProductList() {
           onAnimationEnd={() => {
             setTimeout(() => {
               setNotifications(prev => prev.slice(1));
-            }, 3000);
+            }, 5000);
           }}
           style={{
-            animation: 'fadeOut 300ms ease-in-out 3s forwards'
+            animation: 'fadeOut 300ms ease-in-out 5s forwards'
           }}
         >
           <style jsx>{`
@@ -179,32 +179,37 @@ export default function ProductList() {
   // Check for success notification from URL params
   useEffect(() => {
     const created = searchParams.get('created');
+    const updated = searchParams.get('updated');
     const productTitle = searchParams.get('productTitle');
+    const action = searchParams.get('action');
     
-    if (created === 'true' && productTitle) {
+    if ((created === 'true' || updated === 'true') && productTitle) {
       // Show success notification only once
       setNotifications((prev) => {
         // Check if notification already exists to prevent duplicates
         const existingNotification = prev.find(n => 
           n && typeof n === 'object' && 'key' in n && 
-          typeof n.key === 'string' && n.key.startsWith('created-')
+          typeof n.key === 'string' && n.key.startsWith(`${action}-`)
         );
         
         if (existingNotification) {
           return prev; // Don't add duplicate
         }
         
+        const message = action === 'edited' ? 'Product Updated Successfully!' : 'Product Created Successfully!';
+        const description = `Your ${decodeURIComponent(productTitle)} has been ${action === 'edited' ? 'updated' : 'created'}.`;
+        
         return [
           <div 
-            key={`created-${Date.now()}`} 
+            key={`${action}-${Date.now()}`} 
             className="flex items-start gap-3 rounded-md border bg-white p-3 shadow-sm opacity-100 transition-opacity duration-300"
             onAnimationEnd={() => {
               setTimeout(() => {
                 setNotifications(prev => prev.slice(1));
-              }, 3000);
+              }, 5000);
             }}
             style={{
-              animation: 'fadeOut 300ms ease-in-out 3s forwards'
+              animation: 'fadeOut 300ms ease-in-out 5s forwards'
             }}
           >
             <style jsx>{`
@@ -215,8 +220,8 @@ export default function ProductList() {
             `}</style>
             <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
             <div className="min-w-0">
-              <div className="text-sm font-medium">Product Created Successfully</div>
-              <div className="text-xs text-gray-600">{decodeURIComponent(productTitle)} has been created.</div>
+              <div className="text-sm font-medium">{message}</div>
+              <div className="text-xs text-gray-600">{description}</div>
             </div>
           </div>,
           ...prev,
@@ -226,7 +231,9 @@ export default function ProductList() {
       // Clean up URL params
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete('created');
+      newUrl.searchParams.delete('updated');
       newUrl.searchParams.delete('productTitle');
+      newUrl.searchParams.delete('action');
       window.history.replaceState({}, '', newUrl.toString());
     }
   }, [searchParams]);
@@ -236,13 +243,7 @@ export default function ProductList() {
   return (
     <div className="px-6 py-8 max-w-7xl mx-auto relative">
       {/* Top-right notifications */}
-      <div className="pointer-events-none fixed right-4 top-4 z-[60] w-80">
-        <AnimatedList delay={1200} className="items-end">
-          {notifications.map((n, i) => (
-            <div key={i} className="pointer-events-auto">{n}</div>
-          ))}
-        </AnimatedList>
-      </div>
+      <NotificationContainer notifications={notifications} />
 
       <div className="mb-6 flex items-center justify-between mt-6">
         <div>
@@ -392,8 +393,8 @@ export default function ProductList() {
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this product?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className='tracking-wide'>Delete this product?</AlertDialogTitle>
+            <AlertDialogDescription className='tracking-wide font-semibold'>
               This action cannot be undone. This will permanently delete the product.
             </AlertDialogDescription>
           </AlertDialogHeader>

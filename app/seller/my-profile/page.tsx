@@ -672,8 +672,8 @@ export default function Profile() {
                     <>
                       <Separator />
                       <div className="text-center py-4">
-                        <p className="text-sm text-gray-600 mb-3">
-                          Upgrade to unlock premium features like advanced analytics, priority support, and unlimited product listings.
+                        <p className="text-sm text-gray-600 mb-6 tracking-wide">
+                          Upgrade to unlock premium features like social media advertise, priority support, and unlimited product listings.
                         </p>
                         <Button
                           onClick={() => router.push('/seller/my-subscription')}

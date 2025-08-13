@@ -91,16 +91,16 @@ export default function ChangePasswordPage() {
           <Button
             variant="ghost"
             onClick={() => router.back()}
-            className="mb-4 hover:bg-green-100"
+            className="mb-4 hover:bg-green-100 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Profile
           </Button>
           
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-green-100 rounded-lg">
+            {/* <div className="p-2 bg-green-100 rounded-lg">
               <Key className="w-6 h-6 text-green-600" />
-            </div>
+            </div> */}
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Change Password</h1>
               <p className="text-gray-600">Update your account password for better security</p>

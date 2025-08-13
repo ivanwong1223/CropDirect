@@ -308,7 +308,7 @@ export default function EditProductPage() {
 
       // Navigate back to product list with success message
       const productTitle = encodeURIComponent(formData.productTitle);
-      router.push(`/seller/product-list?updated=true&productTitle=${productTitle}`);
+      router.push(`/seller/product-list?updated=true&productTitle=${productTitle}&action=edited`);
       
     } catch (error) {
       console.error('Save error:', error);

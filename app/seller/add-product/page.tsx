@@ -744,7 +744,7 @@ export default function AddProduct() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
-              <Label>Shipping Method *</Label>
+              <Label>Shipping Method<span className='text-red-500'>*</span></Label>
               <RadioGroup
                 value={formData.shippingMethod}
                 onValueChange={(value) => handleInputChange('shippingMethod', value)}

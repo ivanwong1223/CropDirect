@@ -150,6 +150,17 @@ export const useMenuStore = create<MenuStore>((set, get) => ({
   },
   
   getMenuItemByRoute: (route: string) => {
+    // Special case handling for profile-related routes
+    if (route === '/seller/my-profile' || route === '/seller/change-password') {
+      // Return a virtual menu item for profile pages
+      return {
+        id: 'profile',
+        name: 'My Profile',
+        route: '/seller/my-profile',
+        icon: 'User'
+      };
+    }
+    
     const { menuSections } = get();
     for (const section of menuSections) {
       const item = section.items.find(item => item.route === route);

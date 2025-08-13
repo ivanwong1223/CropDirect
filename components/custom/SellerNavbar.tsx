@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Bell, Settings, User } from 'lucide-react';
+import { Search, Bell, LogOut, User } from 'lucide-react';
 import { MdLanguage } from 'react-icons/md';
 import { FaAngleDown } from 'react-icons/fa';
 import { Input } from '@/components/ui/input';
@@ -292,9 +292,9 @@ export default function SellerNavbar({ className }: SellerNavbarProps) {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/seller/settings" className="flex items-center">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
+                <Link href="/sign-in" className="flex items-center">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
