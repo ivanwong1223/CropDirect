@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ import { getCountries, getStatesByCountry } from "@/lib/countries";
 import { getUserData } from "@/lib/localStorage";
 import ProfilePictureSection from "@/components/custom/ProfilePictureSection";
 import KYBStatusCard from "@/components/custom/KYBStatusCard";
+import NotificationContainer from "@/components/custom/NotificationContainer";
 
 // Animation variants
 const fadeIn = {
@@ -86,6 +87,7 @@ interface UserProfile {
 
 export default function Profile() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -93,6 +95,7 @@ export default function Profile() {
   const [success, setSuccess] = useState<string>("");
   const [availableStates, setAvailableStates] = useState<Array<{code: string, name: string}>>([]);
   const [imagePreview, setImagePreview] = useState<string>("");
+  const [notifications, setNotifications] = useState<React.ReactNode[]>([]);
 
   // Form data state
   const [formData, setFormData] = useState({
@@ -123,6 +126,57 @@ export default function Profile() {
   const countries = getCountries();
   const tradingTypes = ["Wholesaler", "Retailer", "Distributor", "Producer", "Exporter", "Importer"];
   const cropCategories = ["Fruits", "Vegetables", "Grains", "Legumes", "Herbs & Spices", "Nuts & Seeds"];
+
+  // Check for KYB success notification
+  useEffect(() => {
+    const kybSuccess = searchParams.get('kybSuccess');
+    if (kybSuccess === 'true') {
+      setNotifications((prev) => {
+        // Check if notification already exists to prevent duplicates
+        const existingNotification = prev.find(n => 
+          n && typeof n === 'object' && 'key' in n && 
+          typeof n.key === 'string' && n.key.startsWith('kyb-success-')
+        );
+        
+        if (existingNotification) {
+          return prev; // Don't add duplicate
+        }
+        
+        return [
+          <div 
+            key={`kyb-success-${Date.now()}`} 
+            className="flex items-start gap-3 rounded-md border bg-white p-3 shadow-sm opacity-100 transition-opacity duration-300"
+            onAnimationEnd={() => {
+              setTimeout(() => {
+                setNotifications(prev => prev.slice(1));
+              }, 5000);
+            }}
+            style={{
+              animation: 'fadeOut 300ms ease-in-out 5s forwards'
+            }}
+          >
+            <style jsx>{`
+              @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+              }
+            `}</style>
+            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+            <div className="min-w-0">
+              <div className="text-sm font-medium">KYB Form Submitted Successfully!</div>
+              <div className="text-xs text-gray-600">Your application is now pending review.</div>
+            </div>
+          </div>,
+          ...prev,
+        ];
+      });
+      
+      // Clean up URL parameter
+      const url = new URL(window.location.href);
+      url.searchParams.delete('kybSuccess');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams]);
 
   // Fetch user profile data
   useEffect(() => {
@@ -297,7 +351,8 @@ export default function Profile() {
   const kybStatus = profile ? getKybStatusDisplay(profile.kybStatus) : null;
 
   return (
-    <div className="min-h-screen bg-white py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white py-8 px-4 sm:px-6 lg:px-8 relative">
+      <NotificationContainer notifications={notifications} />
       <div className="max-w-6xl mt-6">
         {/* Header */}
         <motion.div

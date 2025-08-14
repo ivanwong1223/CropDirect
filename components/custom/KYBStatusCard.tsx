@@ -81,21 +81,26 @@ export default function KYBStatusCard({ kybStatus, isKybVerified }: KYBStatusCar
               <h3 className={`font-medium ${statusInfo.color}`}>
                 {statusInfo.text}
               </h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground tracking-wide">
                 {statusInfo.description}
               </p>
             </div>
           </div>
           
-          {(kybStatus === 'NOT_SUBMITTED' || kybStatus === 'REJECTED' || kybStatus === 'REQUIRES_RESUBMISSION') && (
+          {(kybStatus === 'NOT_SUBMITTED' || kybStatus === 'REJECTED' || kybStatus === 'REQUIRES_RESUBMISSION' || kybStatus === 'PENDING') && (
             <Button 
-              className="w-full cursor-pointer" 
+              className="w-full cursor-pointer tracking-wide"
+              variant={kybStatus === 'PENDING' ? "link" : "default"}
               onClick={() => {
                 // Navigate to KYB form
-                window.location.href = '/seller/kyb-verification';
+                window.location.href = '/seller/kyb-form';
               }}
             >
-              {kybStatus === 'NOT_SUBMITTED' ? 'Start KYB Verification' : 'Resubmit KYB'}
+              {kybStatus === 'NOT_SUBMITTED' 
+                ? 'Start KYB Verification' 
+                : kybStatus === 'PENDING'
+                ? 'View KYB Form'
+                : 'Resubmit KYB'}
             </Button>
           )}
         </CardContent>

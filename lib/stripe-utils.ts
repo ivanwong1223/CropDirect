@@ -4,7 +4,7 @@ import { StripeCardElement } from '@stripe/stripe-js';
 
 // Initialize Stripe
 export const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_51QqQyFRafZ00oi1RsGa8anmchlensvBjmBgH0msyQ9O1Dym3aszXRvlrbldoRuOE5QMeR31lmVw5C21R26Z5efia00Iu5rlj'
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''
 );
 
 // Utility function to format currency
