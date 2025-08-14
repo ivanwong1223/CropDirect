@@ -85,6 +85,7 @@ export default function NewsFeedPage() {
   // Fetch news data on component mount
   useEffect(() => {
     fetchNewsData(selectedCategory);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) {
@@ -204,6 +205,7 @@ export default function NewsFeedPage() {
               <div className="relative h-48 bg-gray-100">
                 {article.image ? (
                   <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={article.image}
                       alt={article.title}

@@ -145,6 +145,7 @@ export default function AddProduct() {
         window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**

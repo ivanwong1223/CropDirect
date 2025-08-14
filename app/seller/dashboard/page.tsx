@@ -9,13 +9,50 @@ import FooterAdmin from "@/components/custom/FooterAdmin";
 import { Button } from "@/components/ui/button";
 import { Plus, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import KYBVerificationDialog from "@/components/custom/KYBVerificationDialog";
 
 export default function SellerDashboard() {
   const router = useRouter();
   const userData = getUserData();
 
+  // State to manage the KYB status value and dialog open state
+  const [kybStatus, setKybStatus] = useState<string | null>(null);
+  const [kybDialogOpen, setKybDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchKybStatus = async () => {
+      try {
+        if (!userData?.id) return;
+        const resp = await fetch(`/api/kyb-status?userId=${userData.id}`);
+        const data = await resp.json();
+        if (!resp.ok || !data?.data?.kybStatus) return;
+        const status = data.data.kybStatus as string;
+        setKybStatus(status);
+        const shouldPrompt = [
+          "NOT_SUBMITTED",
+          "REJECTED",
+          "REQUIRES_RESUBMISSION",
+        ].includes(status);
+        if (shouldPrompt) setKybDialogOpen(true);
+      } catch (e) {
+        console.error("Failed to fetch KYB status:", e);
+      }
+    };
+
+    fetchKybStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <>
+      {/* KYB Verification Prompt Dialog */}
+      <KYBVerificationDialog
+        open={kybDialogOpen}
+        onOpenChange={setKybDialogOpen}
+        kybStatus={kybStatus}
+      />
+
       {/* Header Section */}
       <div className="bg-blueGray-800 text-white px-4 md:px-10 pt-10">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
@@ -34,7 +71,18 @@ export default function SellerDashboard() {
             <Button 
               className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center gap-2 cursor-pointer"
               onClick={() => {
-                router.push('/seller/add-product');
+                // Check KYB status before allowing navigation
+                const shouldPrompt = [
+                  "NOT_SUBMITTED",
+                  "REJECTED",
+                  "REQUIRES_RESUBMISSION",
+                ].includes(kybStatus || "");
+                
+                if (shouldPrompt) {
+                  setKybDialogOpen(true);
+                } else {
+                  router.push('/seller/add-product');
+                }
               }}
             >
               <Plus className="w-5 h-5" />

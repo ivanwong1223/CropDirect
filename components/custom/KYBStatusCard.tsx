@@ -87,10 +87,10 @@ export default function KYBStatusCard({ kybStatus, isKybVerified }: KYBStatusCar
             </div>
           </div>
           
-          {(kybStatus === 'NOT_SUBMITTED' || kybStatus === 'REJECTED' || kybStatus === 'REQUIRES_RESUBMISSION' || kybStatus === 'PENDING') && (
+          {(kybStatus === 'NOT_SUBMITTED' || kybStatus === 'REJECTED' || kybStatus === 'REQUIRES_RESUBMISSION' || kybStatus === 'PENDING' || kybStatus === 'APPROVED') && (
             <Button 
               className="w-full cursor-pointer tracking-wide"
-              variant={kybStatus === 'PENDING' ? "link" : "default"}
+              variant={kybStatus === 'PENDING' || kybStatus === 'APPROVED' ? "link" : "default"}
               onClick={() => {
                 // Navigate to KYB form
                 window.location.href = '/seller/kyb-form';
@@ -99,6 +99,8 @@ export default function KYBStatusCard({ kybStatus, isKybVerified }: KYBStatusCar
               {kybStatus === 'NOT_SUBMITTED' 
                 ? 'Start KYB Verification' 
                 : kybStatus === 'PENDING'
+                ? 'View KYB Form'
+                : kybStatus === 'APPROVED'
                 ? 'View KYB Form'
                 : 'Resubmit KYB'}
             </Button>

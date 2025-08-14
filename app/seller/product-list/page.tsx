@@ -20,6 +20,7 @@ import {
 import { Package, Plus, MapPin, Tag, Layers, ShoppingBasket, Edit, Trash2, CheckCircle } from "lucide-react";
 import { getUserData } from "@/lib/localStorage";
 import NotificationContainer from "@/components/custom/NotificationContainer";
+import KYBVerificationDialog from "@/components/custom/KYBVerificationDialog";
 
 interface ProductItem {
   id: string;
@@ -52,6 +53,11 @@ export default function ProductList() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<React.ReactNode[]>([]);
+  const userData = getUserData();
+
+  // State to manage the KYB status value and dialog open state
+  const [kybStatus, setKybStatus] = useState<string | null>(null);
+  const [kybDialogOpen, setKybDialogOpen] = useState(false);
 
   // Format a string to Title Case
   const titleCase = (s: string) => s.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase());
@@ -176,6 +182,24 @@ export default function ProductList() {
     fetchProducts();
   }, []);
 
+  useEffect(() => {
+    const fetchKybStatus = async () => {
+      try {
+        if (!userData?.id) return;
+        const resp = await fetch(`/api/kyb-status?userId=${userData.id}`);
+        const data = await resp.json();
+        if (!resp.ok || !data?.data?.kybStatus) return;
+        const status = data.data.kybStatus as string;
+        setKybStatus(status);
+      } catch (e) {
+        console.error("Failed to fetch KYB status:", e);
+      }
+    };
+
+    fetchKybStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Check for success notification from URL params
   useEffect(() => {
     const created = searchParams.get('created');
@@ -252,7 +276,20 @@ export default function ProductList() {
         </div>
         <Button
           className="cursor-pointer"
-          onClick={() => router.push("/seller/add-product")}
+          onClick={() => {
+                // Check KYB status before allowing navigation
+                const shouldPrompt = [
+                  "NOT_SUBMITTED",
+                  "REJECTED",
+                  "REQUIRES_RESUBMISSION",
+                ].includes(kybStatus || "");
+                
+                if (shouldPrompt) {
+                  setKybDialogOpen(true);
+                } else {
+                  router.push("/seller/add-product");
+                }
+              }}
         >
           <Plus className="mr-2" /> Add New Product
         </Button>
@@ -296,7 +333,22 @@ export default function ProductList() {
             <CardDescription>Start by creating your first product listing.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => router.push("/seller/add-product")}>Create Product</Button>
+            <Button className='cursor-pointer' onClick={() => {
+                // Check KYB status before allowing navigation
+                const shouldPrompt = [
+                  "NOT_SUBMITTED",
+                  "REJECTED",
+                  "REQUIRES_RESUBMISSION",
+                ].includes(kybStatus || "");
+                
+                if (shouldPrompt) {
+                  setKybDialogOpen(true);
+                } else {
+                  router.push("/seller/add-product");
+                }
+              }}>
+                Create Product
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -406,6 +458,13 @@ export default function ProductList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* KYB Verification Dialog */}
+      <KYBVerificationDialog
+        open={kybDialogOpen}
+        onOpenChange={setKybDialogOpen}
+        kybStatus={kybStatus}
+      />
     </div>
   );
 }
