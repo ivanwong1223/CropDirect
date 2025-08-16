@@ -124,8 +124,10 @@ model BusinessBuyer {
   userId                  String             @unique
   user                    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   companyName             String
-  companyAddress          String
+  companyAddress          String?
   companyType             String
+  contactNo               String?
+  businessImage           String?
   verificationStatus      VerificationStatus @default(PENDING)
   loyaltyPoints           Int                @default(0)
   preferredPaymentMethods String[]           @default([])

@@ -242,7 +242,7 @@ export default function SellerSignUpPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Business Name */}
               <div className="space-y-2">
-                <Label htmlFor="businessName"> <Building className="text-gray-400 h-5 w-5" />Business Name</Label>
+                <Label htmlFor="businessName"> <Building className="text-gray-400 h-5 w-5" />Business Name<span className='text-red-500'>*</span></Label>
                 <div className="relative">
                   <Input id="businessName" name="businessName" placeholder="Your Company Ltd." onChange={handleChange} required className="pl-4" />
                 </div>
@@ -250,7 +250,7 @@ export default function SellerSignUpPage() {
 
               {/* Contact Name */}
               <div className="space-y-2">
-                <Label htmlFor="contactName"><User className="text-gray-400 h-5 w-5" />Contact Name</Label>
+                <Label htmlFor="contactName"><User className="text-gray-400 h-5 w-5" />Contact Name<span className='text-red-500'>*</span></Label>
                 <div className="relative">
                     <Input id="contactName" name="contactName" placeholder="John Doe" onChange={handleChange} required className="pl-4" />
                 </div>
@@ -343,7 +343,7 @@ export default function SellerSignUpPage() {
 
             {/* Email Address */}
             <div className="space-y-2 mt-6">
-              <Label htmlFor="email"><Mail className="text-gray-400 h-5 w-5" />Email Address</Label>
+              <Label htmlFor="email"><Mail className="text-gray-400 h-5 w-5" />Email Address<span className='text-red-500'>*</span></Label>
               <div className="relative">
                 <Input id="email" name="email" type="email" placeholder="your.email@company.com" onChange={handleChange} required className="pl-4" />
               </div>
@@ -351,7 +351,7 @@ export default function SellerSignUpPage() {
 
             {/* Password */}
             <div className="space-y-2">
-              <Label htmlFor="password"><Lock className="text-gray-400 h-5 w-5" />Password</Label>
+              <Label htmlFor="password"><Lock className="text-gray-400 h-5 w-5" />Password<span className='text-red-500'>*</span></Label>
               <div className="relative">
                 <Input id="password" name="password" type={showPassword ? "text" : "password"} placeholder="Create a strong password" onChange={handleChange} required className="pl-4 pr-10" />
                 <button type="button" onClick={togglePasswordVisibility} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
