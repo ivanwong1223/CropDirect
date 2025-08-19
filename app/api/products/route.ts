@@ -1,30 +1,137 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@/app/generated/prisma';
+import { PrismaClient, Prisma } from '@/app/generated/prisma';
 
 const prisma = new PrismaClient();
 
-// GET - Fetch all products or products by agribusiness
+// GET - Fetch products with marketplace filtering, sorting, and pagination
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    
+    // Basic filters
     const agribusinessId = searchParams.get('agribusinessId');
     const category = searchParams.get('category');
-    const status = searchParams.get('status');
+    const status = searchParams.get('status') || 'ACTIVE';
+    
+    // Marketplace filters
+    const search = searchParams.get('search');
+    const location = searchParams.get('location');
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
+    const services = searchParams.get('services')?.split(',') || [];
+    
+    // Sorting and pagination
+    const sortBy = searchParams.get('sortBy') || 'relevance';
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '12');
+    const skip = (page - 1) * limit;
 
-    const whereClause: Record<string, string | undefined> = {};
+    // Build where clause
+    const whereClause: Prisma.ProductWhereInput = {
+      status: status as Prisma.EnumProductStatusFilter,
+      isActive: true
+    };
     
     if (agribusinessId) {
       whereClause.agribusinessId = agribusinessId;
     }
     
-    if (category) {
+    if (category && category !== 'all') {
       whereClause.cropCategory = category;
     }
     
-    if (status) {
-      whereClause.status = status;
+    // Search functionality
+    if (search) {
+      whereClause.OR = [
+        { productTitle: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { cropCategory: { contains: search, mode: 'insensitive' } },
+        { agribusiness: { businessName: { contains: search, mode: 'insensitive' } } }
+      ];
+    }
+    
+    // Location filter
+    if (location && location !== 'all') {
+      if (location === 'local') {
+        whereClause.agribusiness = {
+          country: 'Malaysia'
+        };
+      } else if (location === 'west-malaysia') {
+        whereClause.agribusiness = {
+          country: 'Malaysia',
+          state: {
+            in: ['Kuala Lumpur', 'Selangor', 'Perak', 'Penang', 'Kedah', 'Perlis', 'Negeri Sembilan', 'Melaka', 'Johor']
+          }
+        };
+      } else if (location === 'east-malaysia') {
+        whereClause.agribusiness = {
+          country: 'Malaysia',
+          state: {
+            in: ['Sabah', 'Sarawak']
+          }
+        };
+      } else if (location === 'overseas') {
+        whereClause.agribusiness = {
+          country: { not: 'Malaysia' }
+        };
+      }
+    }
+    
+    // Price range filter
+    if (minPrice || maxPrice) {
+      whereClause.pricing = {};
+      if (minPrice) whereClause.pricing.gte = parseFloat(minPrice);
+      if (maxPrice) whereClause.pricing.lte = parseFloat(maxPrice);
+    }
+    
+    // Services filter (simplified - would need additional fields in schema for full implementation)
+    if (services.length > 0) {
+      const serviceConditions: Prisma.ProductWhereInput[] = [];
+      
+      if (services.includes('free-shipping')) {
+        serviceConditions.push({ directShippingCost: 0 });
+      }
+      if (services.includes('negotiable')) {
+        serviceConditions.push({ allowBidding: true });
+      }
+      if (services.includes('bulk-discount')) {
+        serviceConditions.push({ minimumOrderQuantity: { gte: 100 } });
+      }
+      
+      if (serviceConditions.length > 0) {
+        whereClause.OR = whereClause.OR ? 
+          [...whereClause.OR, ...serviceConditions] : 
+          serviceConditions;
+      }
     }
 
+    // Build orderBy clause
+    let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+    
+    switch (sortBy) {
+      case 'latest':
+        orderBy = { createdAt: 'desc' };
+        break;
+      case 'price-low':
+        orderBy = { pricing: 'asc' };
+        break;
+      case 'price-high':
+        orderBy = { pricing: 'desc' };
+        break;
+      case 'top-sales':
+        // Would need sales data - using quantity available as proxy
+        orderBy = { quantityAvailable: 'desc' };
+        break;
+      default: // relevance
+        orderBy = { createdAt: 'desc' };
+    }
+
+    // Get total count for pagination
+    const totalCount = await prisma.product.count({
+      where: whereClause
+    });
+
+    // Fetch products
     const products = await prisma.product.findMany({
       where: whereClause,
       include: {
@@ -36,14 +143,27 @@ export async function GET(request: NextRequest) {
           }
         }
       },
-      orderBy: {
-        createdAt: 'desc'
-      }
+      orderBy,
+      skip,
+      take: limit
     });
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
 
     return NextResponse.json({
       success: true,
-      data: products
+      data: products,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasNextPage,
+        hasPrevPage,
+        limit
+      }
     });
 
   } catch (error) {

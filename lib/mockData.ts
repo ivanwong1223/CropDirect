@@ -285,6 +285,98 @@ export const mockStatsChanges = {
   performance: { percent: 12, trend: "up" as const, period: "Since last month" }
 };
 
+// Categories and subcategories interfaces for MegaMenu
+export interface SubCategory {
+  id: string;
+  name: string;
+  route: string;
+  description?: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  route: string;
+  icon?: string;
+  subcategories: SubCategory[];
+}
+
+// Mock categories data for MegaMenu
+export const mockCategories: Category[] = [
+  {
+    id: "vegetables",
+    name: "Vegetables",
+    route: "/marketplace/vegetables",
+    icon: "🥬",
+    subcategories: [
+      { id: "leafy-greens", name: "Leafy Greens", route: "/marketplace/vegetables/leafy-greens", description: "Lettuce, Spinach, Kale" },
+      { id: "root-vegetables", name: "Root Vegetables", route: "/marketplace/vegetables/root-vegetables", description: "Carrots, Potatoes, Onions" },
+      { id: "cruciferous", name: "Cruciferous", route: "/marketplace/vegetables/cruciferous", description: "Broccoli, Cauliflower, Cabbage" },
+      { id: "nightshades", name: "Nightshades", route: "/marketplace/vegetables/nightshades", description: "Tomatoes, Eggplants, Peppers" }
+    ]
+  },
+  {
+    id: "fruits",
+    name: "Fruits",
+    route: "/marketplace/fruits",
+    icon: "🍎",
+    subcategories: [
+      { id: "citrus", name: "Citrus Fruits", route: "/marketplace/fruits/citrus", description: "Oranges, Lemons, Limes" },
+      { id: "berries", name: "Berries", route: "/marketplace/fruits/berries", description: "Strawberries, Blueberries, Raspberries" },
+      { id: "tropical", name: "Tropical Fruits", route: "/marketplace/fruits/tropical", description: "Mangoes, Pineapples, Papayas" },
+      { id: "stone-fruits", name: "Stone Fruits", route: "/marketplace/fruits/stone-fruits", description: "Peaches, Plums, Cherries" }
+    ]
+  },
+  {
+    id: "grains",
+    name: "Grains & Cereals", 
+    route: "/marketplace/grains",
+    icon: "🌾",
+    subcategories: [
+      { id: "rice", name: "Rice", route: "/marketplace/grains/rice", description: "White Rice, Brown Rice, Basmati" },
+      { id: "wheat", name: "Wheat", route: "/marketplace/grains/wheat", description: "Wheat Flour, Whole Wheat" },
+      { id: "corn", name: "Corn", route: "/marketplace/grains/corn", description: "Sweet Corn, Feed Corn" },
+      { id: "oats", name: "Oats", route: "/marketplace/grains/oats", description: "Rolled Oats, Steel Cut Oats, Instant Oats" }
+    ]
+  },
+  {
+    id: "legumes",
+    name: "Legumes",
+    route: "/marketplace/legumes", 
+    icon: "🫘",
+    subcategories: [
+      { id: "beans", name: "Beans", route: "/marketplace/legumes/beans", description: "Black Beans, Kidney Beans, Navy Beans" },
+      { id: "lentils", name: "Lentils", route: "/marketplace/legumes/lentils", description: "Red Lentils, Green Lentils" },
+      { id: "peas", name: "Peas", route: "/marketplace/legumes/peas", description: "Green Peas, Split Peas" },
+      { id: "chickpeas", name: "Chickpeas", route: "/marketplace/legumes/chickpeas", description: "Garbanzo Beans, Hummus Beans" }
+    ]
+  }
+];
+
+// Sort options for marketplace
+export const sortOptions = [
+  { value: "relevance", label: "Relevance" },
+  { value: "latest", label: "Latest" },
+  { value: "top-sales", label: "Top Sales" },
+  { value: "price-low-high", label: "Price (Low → High)" },
+  { value: "price-high-low", label: "Price (High → Low)" }
+];
+
+// Location filter options
+export const locationOptions = [
+  { value: "local", label: "Local" },
+  { value: "west-malaysia", label: "West Malaysia" },
+  { value: "east-malaysia", label: "East Malaysia" },
+  { value: "overseas", label: "Overseas" }
+];
+
+// Services filter options
+export const servicesOptions = [
+  { value: "free-shipping", label: "Free Shipping" },
+  { value: "negotiable-price", label: "Negotiable Price" },
+  { value: "bulk-discounts", label: "Bulk Discounts" }
+];
+
 // Mock sales transactions for payments page
 export const mockSalesTransactions: SalesTransaction[] = [
   {

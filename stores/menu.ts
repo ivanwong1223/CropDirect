@@ -85,24 +85,40 @@ const menuData: MenuSection[] = [
     userRole: 'buyer',
     items: [
       {
+        id: 'category',
+        name: 'Category',
+        route: '/buyer/category',
+        icon: 'Boxes'
+      },
+      {
         id: 'marketplace',
         name: 'Marketplace',
-        route: '/buyer/marketplace',
+        route: '/buyer/marketplace/market-lists',
+        icon: 'Store'
+      },
+      {
+        id: 'news-feed',
+        name: 'News Feed',
+        route: '/buyer/news-feed',
+        icon: 'Newspaper'
+      },
+      {
+        id: 'featured-seller',
+        name: 'Featured Seller',
+        route: '/buyer/featured-seller',
+        icon: 'Users'
       },
       {
         id: 'my-orders',
         name: 'My Orders',
         route: '/buyer/orders',
-      },
-      {
-        id: 'favorites',
-        name: 'Favorites',
-        route: '/buyer/favorites',
+        icon: 'ShoppingBag'
       },
       {
         id: 'buyer-profile',
         name: 'Profile',
         route: '/buyer/profile',
+        icon: 'User'
       }
     ]
   },
