@@ -18,7 +18,7 @@ export default function BuyerLayout({
   return (
     <>
     <PrimeReactProvider>
-      <div className="flex h-screen bg-[#E6F3D6]">
+      <div className="flex h-screen">
         {/* Main Content Area */}
         <main 
           className={`flex-1 flex flex-col transition-all duration-300 ${

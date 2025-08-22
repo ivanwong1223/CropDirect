@@ -11,6 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useMenuStore } from '@/stores/menu';
 import { getUserData } from '@/lib/localStorage';
 import { mockCategories } from '@/lib/mockData';
+import { cn } from '@/lib/utils';
 
 // A simple item used inside the mega menu columns
 function MenuItem({ title, desc }: { title: string; desc: string }) {
@@ -85,21 +86,27 @@ export default function BuyerNavbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white">
-      <div className="mx-auto max-w-7xl">
+    <nav className="w-full bg-green-900 py-2">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Top bar: Logo, Links (left) and actions (right) */}
-        <div className="flex h-20 items-center justify-between px-4">
+        <div className="flex h-20 items-center justify-between">
           {/* Left cluster: Logo + nav links */}
           <div className="flex items-center gap-10">
-            {/* Logo - enlarged for better visibility */}
-            <Link href="/">
-              <div className="relative h-20 w-45">
-                <Image src="/cropdirect-logo(black-text).png" alt="Logo" fill className="object-contain scale-150" />
-              </div>
-            </Link>
+            {/* Logo */}
+            <div className="flex-shrink-0">
+              <Link href="/buyer/dashboard" className="flex items-center">
+                <Image 
+                  src="/cropdirect-logo(white-text).png" 
+                  alt="CropDirect Logo" 
+                  width={120} 
+                  height={32} 
+                  className="h-8 w-auto" 
+                />
+              </Link>
+            </div>
 
             {/* Inline links from store: Home, Category (with MegaMenu), Marketplace, News Feed */}
-            <nav className="hidden md:flex items-center gap-6 text-sm">
+            <nav className="hidden md:flex items-center gap-6">
               {leftLinks.map((item) => (
                 item?.id === 'category' ? (
                   <div
@@ -108,7 +115,7 @@ export default function BuyerNavbar() {
                     onMouseEnter={() => setOpenCategory(true)}
                     onMouseLeave={() => setOpenCategory(false)}
                   >
-                    <button className="flex items-center cursor-pointer gap-2 whitespace-nowrap text-foreground hover:underline">
+                    <button className="flex items-center cursor-pointer gap-2 whitespace-nowrap text-md font-semibold tracking-tight text-white hover:text-yellow-400 transition-colors">
                       {/* Icon for Category */}
                       {renderIcon(item.icon, 'h-5 w-5')}
                       <span>{item.name}</span>
@@ -117,10 +124,10 @@ export default function BuyerNavbar() {
 
                     {/* Mega Menu Panel */}
                     {openCategory && (
-                      <div className="absolute left-0 top-full mt-2 w-screen max-w-6xl border bg-white shadow-xl rounded-lg overflow-hidden -ml-[40px]">
+                      <div className="absolute left-0 top-full mt-2 w-screen max-w-6xl border bg-white shadow-xl rounded-lg overflow-hidden -ml-[40px] z-50">
                         <div className="flex flex-col">
                           {/* Categories Grid */}
-                          <div className="grid grid-cols-4 gap-0">
+                          <div className="grid grid-cols-4 gap-0 space-y-3">
                             {mockCategories.slice(0, 6).map((category, index) => (
                               <div key={category.id} className="p-6 hover:bg-gray-50 transition-colors">
                                 <div className="flex items-center gap-3 mb-4">
@@ -210,7 +217,7 @@ export default function BuyerNavbar() {
                     )}
                   </div>
                 ) : (
-                  <Link key={item.id} href={item.route} className="flex items-center gap-2 whitespace-nowrap text-foreground hover:underline">
+                  <Link key={item.id} href={item.route} className="flex items-center gap-2 whitespace-nowrap text-md font-semibold tracking-tight text-white hover:text-yellow-400 transition-colors">
                     {renderIcon(item.icon)}
                     <span>{item.name}</span>
                   </Link>
@@ -225,7 +232,7 @@ export default function BuyerNavbar() {
               (() => {
                 const ordersItem = rightLinks.find((it) => it.id === 'my-orders')!;
                 return (
-                  <Link href={ordersItem.route} className="flex items-center gap-2 whitespace-nowrap text-sm text-foreground hover:underline">
+                  <Link href={ordersItem.route} className="flex items-center gap-2 whitespace-nowrap text-md font-semibold tracking-tight text-white hover:text-yellow-400 transition-colors">
                     {renderIcon(ordersItem.icon)}
                     <span>{ordersItem.name}</span>
                   </Link>
@@ -236,7 +243,7 @@ export default function BuyerNavbar() {
             {/* Profile Dropdown styled like SellerNavbar */}
             {rightLinks.find((it) => it.id === 'buyer-profile') && (
               <DropdownMenu>
-                <DropdownMenuTrigger className="flex items-center space-x-3 p-2 rounded-md hover:bg-accent transition-colors">
+                <DropdownMenuTrigger className="group flex items-center space-x-3 p-2 rounded-md hover:bg-yellow-400 transition-colors">
                   <Avatar className="h-8">
                     {/* Display buyer business image if available */}
                     <AvatarImage src={buyerData?.businessImage} alt={buyerData?.companyName || userData?.name} />
@@ -260,11 +267,11 @@ export default function BuyerNavbar() {
                   </Avatar>
                   <div className="flex flex-col items-start whitespace-nowrap">
                     {userData?.name && (
-                      <span className="text-sm font-medium text-foreground">{userData.name}</span>
+                      <span className="text-sm font-medium text-white group-hover:text-black">{userData.name}</span>
                     )}
-                    <span className="text-xs text-muted-foreground">Buyer</span>
+                    <span className="text-xs text-gray-300 group-hover:text-black">Buyer</span>
                   </div>
-                  <FaAngleDown className="h-3 w-3 text-muted-foreground" />
+                  <FaAngleDown className="h-3 w-3 text-gray-300" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40">
                   <DropdownMenuItem asChild>
@@ -285,6 +292,6 @@ export default function BuyerNavbar() {
           </div>
         </div>
       </div>
-    </header>
+    </nav>
   );
 }
