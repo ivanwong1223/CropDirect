@@ -20,8 +20,8 @@ export function PromoBanner() {
   const rotatingDescriptions = [
     "No need to stress about shopping for agricultural products. Order online and have your crops delivered straight to your doorstep for free.",
     "Join now and enjoy loyalty rewards on your purchases. Build lasting partnerships with verified agribusinesses.",
-    "Get the freshest agricultural products directly from trusted farmers and suppliers in your area.",
-    "Connect with verified agribusinesses and create long-term trading relationships that benefit everyone."
+    "Get the freshest agricultural products directly from trusted farmers and suppliers in your area with no hesitation.",
+    "Connect with our verified agribusinesses and create long-term trading relationships that benefit everyone."
   ];
 
   return (

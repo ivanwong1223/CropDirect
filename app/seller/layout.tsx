@@ -25,7 +25,7 @@ export default function SellerLayout({
 
   return (
     <>
-      <div className="flex h-screen bg-gray-50">
+      <div className="bg-gray-50">
         {/* Sidebar - Only show if not on KYB form */}
         {!isKybForm && (
           <SellerSidebar 

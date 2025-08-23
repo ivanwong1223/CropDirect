@@ -194,6 +194,9 @@ export async function POST(request: NextRequest) {
       pricing,
       currency,
       allowBidding,
+      minimumIncrement,
+      auctionEndTime,
+      autoAcceptThreshold,
       storageConditions,
       expiryDate,
       location,
@@ -213,6 +216,31 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
+    }
+
+    // Validate bidding-specific fields when allowBidding is true
+    if (allowBidding) {
+      if (!minimumIncrement || !auctionEndTime) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Minimum increment and auction end time are required when bidding is enabled' 
+          },
+          { status: 400 }
+        );
+      }
+      
+      // Validate auction end time is in the future
+      const endTime = new Date(auctionEndTime);
+      if (endTime <= new Date()) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Auction end time must be in the future' 
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Verify agribusiness exists
@@ -243,6 +271,10 @@ export async function POST(request: NextRequest) {
         pricing: parseFloat(pricing),
         currency: currency || 'RM',
         allowBidding: allowBidding || false,
+        // Bidding-specific fields (only set if allowBidding is true)
+        minimumIncrement: allowBidding && minimumIncrement ? parseFloat(minimumIncrement) : null,
+        auctionEndTime: allowBidding && auctionEndTime ? new Date(auctionEndTime) : null,
+        autoAcceptThreshold: allowBidding && autoAcceptThreshold ? parseFloat(autoAcceptThreshold) : null,
         storageConditions,
         expiryDate: expiryDate ? new Date(expiryDate) : null,
         location,

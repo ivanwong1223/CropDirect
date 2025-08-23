@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
         facebookUrl: true,
         instagramUrl: true,
         websiteUrl: true,
+        contactNo: true,
         kybStatus: true,
         // Get subscription information instead of subscriptionTier
         subscription: {

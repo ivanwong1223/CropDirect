@@ -271,7 +271,7 @@ export default function BuyerNavbar() {
                     )}
                     <span className="text-xs text-gray-300 group-hover:text-black">Buyer</span>
                   </div>
-                  <FaAngleDown className="h-3 w-3 text-gray-300" />
+                  <FaAngleDown className="h-3 w-3 text-gray-300 group-hover:text-black" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40">
                   <DropdownMenuItem asChild>

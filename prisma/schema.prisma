@@ -204,6 +204,11 @@ model Product {
   currency              String        @default("RM")
   allowBidding          Boolean       @default(false)
   
+  // Bidding-specific fields (only used when allowBidding is true)
+  minimumIncrement      Decimal?      @db.Decimal(10, 2)
+  auctionEndTime        DateTime?
+  autoAcceptThreshold   Decimal?      @db.Decimal(10, 2)
+  
   // Section C: Additional Details & Media
   storageConditions     String?
   expiryDate            DateTime?

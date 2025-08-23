@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -69,8 +70,11 @@ interface FilterState {
 }
 
 export default function MarketListsPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchInput, setSearchInput] = useState("");
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get('search') || '';
+  
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [searchInput, setSearchInput] = useState(initialSearch);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
@@ -237,6 +241,7 @@ export default function MarketListsPage() {
   // Fetch products when dependencies change
   useEffect(() => {
     fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, sortBy, currentPage, filters]);
   
   // Reset to first page when filters change
@@ -244,6 +249,7 @@ export default function MarketListsPage() {
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, sortBy, filters]);
 
   const handleViewDetails = (productId: string) => {

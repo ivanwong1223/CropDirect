@@ -17,6 +17,14 @@ export async function GET(
         agribusiness: {
           select: {
             businessName: true,
+            tradingType: true,
+            primaryCropCategory: true,
+            bio: true,
+            facebookUrl: true,
+            instagramUrl: true,
+            websiteUrl: true,
+            subscriptionTier: true,
+            businessImage: true,
             state: true,
             country: true,
             contactNo: true,
@@ -123,6 +131,14 @@ export async function PUT(
         agribusiness: {
           select: {
             businessName: true,
+            tradingType: true,
+            primaryCropCategory: true,
+            bio: true,
+            facebookUrl: true,
+            instagramUrl: true,
+            websiteUrl: true,
+            subscriptionTier: true,
+            businessImage: true,
             state: true,
             country: true,
           }

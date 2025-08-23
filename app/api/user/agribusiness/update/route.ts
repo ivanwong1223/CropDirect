@@ -18,7 +18,8 @@ export async function PUT(request: NextRequest) {
       businessImage,
       facebookUrl,
       instagramUrl,
-      websiteUrl
+      websiteUrl,
+      contactNo,
     } = body;
 
     if (!userId) {
@@ -55,7 +56,8 @@ export async function PUT(request: NextRequest) {
           businessImage,
           facebookUrl,
           instagramUrl,
-          websiteUrl
+          websiteUrl,
+          contactNo,
         }
       });
 

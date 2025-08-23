@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,7 +49,8 @@ export default function ProductCard({ product, onViewDetails }: ProductCardProps
   };
 
   return (
-    <Card className="group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+    <Link href={`/buyer/marketplace/${product.id}`}>
+      <Card className="group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
       <div className="relative h-48 overflow-hidden rounded-lg">
         <Image
           src={product.productImages[0] || "/images/placeholder-product.jpg"}
@@ -123,6 +125,7 @@ export default function ProductCard({ product, onViewDetails }: ProductCardProps
           View Details
         </Button> */}
       </CardContent>
-    </Card>
+      </Card>
+    </Link>
   );
 }

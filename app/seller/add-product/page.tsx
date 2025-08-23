@@ -32,6 +32,10 @@ interface FormData {
   pricing: string;
   currency: string;
   allowBidding: boolean;
+  // Bidding-specific fields
+  minimumIncrement: string;
+  auctionEndTime: Date | undefined;
+  autoAcceptThreshold: string;
   
   // Section C: Additional Details & Media
   storageConditions: string;
@@ -69,6 +73,9 @@ export default function AddProduct() {
     pricing: '',
     currency: 'RM',
     allowBidding: false,
+    minimumIncrement: '',
+    auctionEndTime: undefined,
+    autoAcceptThreshold: '',
     storageConditions: '',
     expiryDate: undefined,
     location: '',
@@ -299,6 +306,9 @@ export default function AddProduct() {
         pricing: formData.pricing,
         currency: formData.currency,
         allowBidding: formData.allowBidding,
+        minimumIncrement: formData.minimumIncrement,
+        auctionEndTime: formData.auctionEndTime?.toISOString(),
+        autoAcceptThreshold: formData.autoAcceptThreshold,
         storageConditions: formData.storageConditions,
         expiryDate: formData.expiryDate?.toISOString(),
         location: formData.location,
@@ -333,6 +343,9 @@ export default function AddProduct() {
           pricing: '',
           currency: 'RM',
           allowBidding: false,
+          minimumIncrement: '',
+          auctionEndTime: undefined,
+          autoAcceptThreshold: '',
           storageConditions: '',
           expiryDate: undefined,
           location: '',
@@ -566,36 +579,8 @@ export default function AddProduct() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="pricing">Pricing<span className='text-red-500'>*</span></Label>
-                <div className="flex gap-2">
-                  <Select value={formData.currency} onValueChange={(value) => handleInputChange('currency', value)}>
-                    <SelectTrigger className="w-20 bg-white border-1 border-gray-300">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {currencies.map((currency) => (
-                        <SelectItem key={currency} value={currency}>
-                          {currency}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    id="pricing"
-                    type="number"
-                    step="0.01"
-                    placeholder="3.50"
-                    value={formData.pricing}
-                    onChange={(e) => handleInputChange('pricing', e.target.value)}
-                    className="flex-1 bg-white border-1 border-gray-300"
-                    required
-                  />
-                </div>
-                <p className="text-sm text-gray-500">Price per {formData.unitOfMeasurement || 'unit'}</p>
-              </div>
-
+            <div className="space-y-6">
+              {/* Allow Bidding Toggle */}
               <div className="space-y-4">
                 <Label>Allow Bidding / Negotiation</Label>
                 <div className="flex items-center space-x-2">
@@ -610,6 +595,146 @@ export default function AddProduct() {
                   </Label>
                 </div>
               </div>
+
+              {/* Conditional Pricing Fields */}
+              {!formData.allowBidding ? (
+                // Fixed Price Section
+                <div className="space-y-2">
+                  <Label htmlFor="pricing">Fixed Price<span className='text-red-500'>*</span></Label>
+                  <div className="flex gap-2">
+                    <Select value={formData.currency} onValueChange={(value) => handleInputChange('currency', value)}>
+                      <SelectTrigger className="w-20 bg-white border-1 border-gray-300">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {currencies.map((currency) => (
+                          <SelectItem key={currency} value={currency}>
+                            {currency}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      id="pricing"
+                      type="number"
+                      step="0.01"
+                      placeholder="3.50"
+                      value={formData.pricing}
+                      onChange={(e) => handleInputChange('pricing', e.target.value)}
+                      className="flex-1 bg-white border-1 border-gray-300"
+                      required
+                    />
+                  </div>
+                  <p className="text-sm text-gray-500">Price per {formData.unitOfMeasurement || 'unit'}</p>
+                </div>
+              ) : (
+                // Bidding Section
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Starting Price */}
+                    <div className="space-y-2">
+                      <Label htmlFor="pricing">Starting Price (Minimum Acceptable)<span className='text-red-500'>*</span></Label>
+                      <div className="flex gap-2">
+                        <Select value={formData.currency} onValueChange={(value) => handleInputChange('currency', value)}>
+                          <SelectTrigger className="w-20 bg-white border-1 border-gray-300">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {currencies.map((currency) => (
+                              <SelectItem key={currency} value={currency}>
+                                {currency}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          id="pricing"
+                          type="number"
+                          step="0.01"
+                          placeholder="3.50"
+                          value={formData.pricing}
+                          onChange={(e) => handleInputChange('pricing', e.target.value)}
+                          className="flex-1 bg-white border-1 border-gray-300"
+                          required
+                        />
+                      </div>
+                      <p className="text-sm text-gray-500">Starting bid price per {formData.unitOfMeasurement || 'unit'}</p>
+                    </div>
+
+                    {/* Minimum Increment */}
+                    <div className="space-y-2">
+                      <Label htmlFor="minimumIncrement">Minimum Increment<span className='text-red-500'>*</span></Label>
+                      <div className="flex gap-2">
+                        <span className="flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l text-sm text-gray-600">
+                          {formData.currency}
+                        </span>
+                        <Input
+                          id="minimumIncrement"
+                          type="number"
+                          step="0.01"
+                          placeholder="5.00"
+                          value={formData.minimumIncrement}
+                          onChange={(e) => handleInputChange('minimumIncrement', e.target.value)}
+                          className="flex-1 bg-white border-1 border-gray-300 rounded-l-none"
+                          required={formData.allowBidding}
+                        />
+                      </div>
+                      <p className="text-sm text-gray-500">Each bid must be at least this amount higher</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Auction End Time */}
+                    <div className="space-y-2">
+                      <Label>Auction End Time<span className='text-red-500'>*</span></Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className={`w-full justify-start text-left font-normal bg-white border-1 border-gray-300 ${
+                              !formData.auctionEndTime && 'text-muted-foreground'
+                            }`}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {formData.auctionEndTime ? format(formData.auctionEndTime, 'PPP') : 'Select end date'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={formData.auctionEndTime}
+                            onSelect={(date) => handleInputChange('auctionEndTime', date)}
+                            disabled={(date) => date < new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <p className="text-sm text-gray-500">When the bidding period ends</p>
+                    </div>
+
+                    {/* Auto-accept Threshold */}
+                    <div className="space-y-2">
+                      <Label htmlFor="autoAcceptThreshold">Auto-accept Bids Above (Optional)</Label>
+                      <div className="flex gap-2">
+                        <span className="flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l text-sm text-gray-600">
+                          {formData.currency}
+                        </span>
+                        <Input
+                          id="autoAcceptThreshold"
+                          type="number"
+                          step="0.01"
+                          placeholder="10.00"
+                          value={formData.autoAcceptThreshold}
+                          onChange={(e) => handleInputChange('autoAcceptThreshold', e.target.value)}
+                          className="flex-1 bg-white border-1 border-gray-300 rounded-l-none"
+                        />
+                      </div>
+                      <p className="text-sm text-gray-500">Automatically accept bids above this amount</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

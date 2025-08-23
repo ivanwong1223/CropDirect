@@ -123,7 +123,9 @@ export default function BuyerDashboard() {
               </p>
               <div className="mt-3 flex items-center gap-3">
                 <SearchField />
-                <InteractiveHoverButton className="text-black">Marketplace</InteractiveHoverButton>
+                <Link href="/buyer/marketplace/market-lists">
+                  <InteractiveHoverButton className="text-black">Marketplace</InteractiveHoverButton>
+                </Link>
               </div>
               <div className="mt-8 flex flex-wrap gap-3">
                 {['🥬Vegetables', '🌾Grains', '🍎Fruits', '☕Specialty Coffee', '🥜Nuts & Seeds', '🐟Fishery', '🌽Cereals'].map((category) => (

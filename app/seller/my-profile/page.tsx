@@ -110,7 +110,8 @@ export default function Profile() {
     businessImage: "",
     facebookUrl: "",
     instagramUrl: "",
-    websiteUrl: ""
+    websiteUrl: "",
+    contactNo: ""
   });
 
   // Monitor formData changes
@@ -213,7 +214,8 @@ export default function Profile() {
             businessImage: data.data.businessImage || "",
             facebookUrl: data.data.facebookUrl || "",
             instagramUrl: data.data.instagramUrl || "",
-            websiteUrl: data.data.websiteUrl || ""
+            websiteUrl: data.data.websiteUrl || "",
+            contactNo: data.data.contactNo || ""
           };
           
           console.log("Setting form data:", formDataToSet);
@@ -456,6 +458,22 @@ export default function Profile() {
                       value={formData.email}
                       onChange={handleInputChange}
                       placeholder="Enter email address"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="contactNo" className="flex items-center gap-2">
+                      <CircleUser className="h-4 w-4" />
+                      Contact Number
+                    </Label>
+                    <Input
+                      id="contactNo"
+                      name="contactNo"
+                      type="tel"
+                      value={formData.contactNo}
+                      onChange={handleInputChange}
+                      placeholder="Enter contact number"
                       required
                     />
                   </div>
