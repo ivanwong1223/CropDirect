@@ -21,6 +21,7 @@ import { FaIdBadge } from "react-icons/fa";
 import FAQ from '@/components/landing-page/FAQ';
 import MarqueeSection from '@/components/landing-page/Marquee';
 import Testimonial from '@/components/landing-page/Testimonial';
+import PromoBanner from '@/components/custom/PromoBanner';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('agribusiness');
@@ -652,6 +653,10 @@ export default function Home() {
       {/* Testimonials Section */}
       <div>
         <Testimonial />
+      </div>
+      {/* Promo Banner */}
+      <div className='px-16 bg-black'>
+        <PromoBanner />
       </div>
     </div>
   ); 

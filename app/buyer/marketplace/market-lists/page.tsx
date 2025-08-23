@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -70,6 +70,9 @@ interface FilterState {
 
 export default function MarketListsPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
   const [currentPage, setCurrentPage] = useState(1);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -89,6 +92,17 @@ export default function MarketListsPage() {
     priceRange: { min: "", max: "" },
     services: []
   });
+  const searchRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sample suggestions - in real app, this would come from API
+  const allSuggestions = [
+    "Rice", "Wheat", "Corn", "Tomatoes", "Potatoes", "Onions", "Carrots", "Lettuce",
+    "Spinach", "Broccoli", "Cabbage", "Bell Peppers", "Cucumbers", "Beans", "Peas",
+    "Apples", "Bananas", "Oranges", "Grapes", "Strawberries", "Mangoes", "Pineapples",
+    "Coconuts", "Avocados", "Lemons", "Coffee Beans", "Tea Leaves", "Spices", "Herbs",
+    "Organic Vegetables", "Fresh Fruits", "Grains", "Cereals", "Pulses", "Nuts", "Seeds"
+  ];
 
   // Fetch products from API
   const fetchProducts = async () => {
@@ -159,6 +173,67 @@ export default function MarketListsPage() {
     }
   };
   
+  // Fetch suggestions based on input
+  const fetchSuggestions = (input: string) => {
+    if (input.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    
+    const filtered = allSuggestions.filter(suggestion =>
+      suggestion.toLowerCase().includes(input.toLowerCase())
+    ).slice(0, 8); // Limit to 8 suggestions
+    
+    setSuggestions(filtered);
+    setShowSuggestions(filtered.length > 0);
+  };
+
+  // Handle input change for suggestions
+  const handleInputChange = (value: string) => {
+    setSearchInput(value);
+    fetchSuggestions(value);
+  };
+
+  // Handle search submission
+  const handleSearch = (query?: string) => {
+    const searchTerm = query || searchInput;
+    setSearchQuery(searchTerm);
+    setShowSuggestions(false);
+    if (inputRef.current) {
+      inputRef.current.blur();
+    }
+  };
+
+  // Handle suggestion click
+  const handleSuggestionClick = (suggestion: string) => {
+    setSearchInput(suggestion);
+    handleSearch(suggestion);
+  };
+
+  // Handle key press
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    }
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   // Fetch products when dependencies change
   useEffect(() => {
     fetchProducts();
@@ -187,54 +262,25 @@ export default function MarketListsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-12">
         {/* Header Section */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Agricultural Marketplace</h1>
-          <p className="text-gray-600">Discover fresh crops and agricultural products from verified sellers</p>
+        <div className="mb-15">
+          <h1 className="scroll-m-20 text-4xl font-bold tracking-tight text-balance mb-4">
+            {searchQuery ? `Search Result for '${searchQuery}'` : "Search Result for 'All'"}
+          </h1>
+          <p className="text-gray-600 tracking-wide">Discover fresh crops and agricultural products from verified sellers</p>
         </div>
 
-        {/* Search and Sort Bar */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Mobile Filter Button */}
-            <Button
-              variant="outline"
-              onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden flex items-center gap-2"
-            >
-              <Filter className="w-4 h-4" />
-              Filters
-            </Button>
-
-            {/* Search Bar */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                type="text"
-                placeholder="Search crops, products, categories…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-10"
-              />
-            </div>
-
-            {/* Sort Dropdown */}
-            <div className="w-full lg:w-48">
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="h-10">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sortOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+        {/* Mobile Filter Button - Only shown on mobile */}
+        <div className="lg:hidden mb-4">
+          <Button
+            variant="outline"
+            onClick={() => setIsSidebarOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Filter className="w-4 h-4" />
+            Filters
+          </Button>
         </div>
 
         <div className="flex gap-6">
@@ -258,6 +304,65 @@ export default function MarketListsPage() {
 
           {/* Main Content */}
           <div className="flex-1">
+            {/* Search and Sort Bar - Above Product Cards */}
+            <div className="bg-white p-2 mb-6">
+              <div className="flex flex-col sm:flex-row gap-4">
+                {/* Search Bar */}
+                <div ref={searchRef} className="relative flex-1">
+                  <div className="relative border border-gray-300 rounded-lg overflow-hidden">
+                    <Input
+                      ref={inputRef}
+                      type="text"
+                      placeholder="Search crops, products, categories…"
+                      value={searchInput}
+                      onChange={(e) => handleInputChange(e.target.value)}
+                      onKeyDown={handleKeyPress}
+                      onFocus={() => fetchSuggestions(searchInput)}
+                      className="pl-4 pr-12 h-10 rounded-lg border-0 focus:ring-0 focus:border-0"
+                    />
+                    <button
+                      onClick={() => handleSearch()}
+                      className="cursor-pointer absolute right-0 top-0 h-full px-8 bg-green-600 hover:bg-green-700 text-white rounded-r-lg transition-colors duration-200 flex items-center justify-center"
+                    >
+                      <Search className="w-4 h-4" />
+                    </button>
+                  </div>
+                  
+                  {/* Autocomplete Suggestions Dropdown */}
+                  {showSuggestions && suggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50 mt-1 max-h-64 overflow-y-auto">
+                      {suggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          onClick={() => handleSuggestionClick(suggestion)}
+                          className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 flex items-center gap-2"
+                        >
+                          <Search className="w-4 h-4 text-gray-400" />
+                          <span className="text-gray-700">{suggestion}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Sort Dropdown */}
+                <div className="w-full sm:w-48">
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="h-10 border border-gray-400">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sortOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
             {/* Results Count */}
             {!loading && (
               <div className="mb-4">

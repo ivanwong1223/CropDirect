@@ -244,7 +244,9 @@ export default function BuyerDashboard() {
           )}
         </section>
         {/* Promo Banner */}
-        <PromoBanner />
+        <div className='px-2 py-20'>
+          <PromoBanner />
+        </div>
 
         {/* News Feed Highlights */}
         {/* <section className="py-8">

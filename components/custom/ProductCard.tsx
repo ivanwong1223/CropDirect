@@ -49,7 +49,7 @@ export default function ProductCard({ product, onViewDetails }: ProductCardProps
 
   return (
     <Card className="group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-      <div className="relative h-48 overflow-hidden rounded-lg mb-4">
+      <div className="relative h-48 overflow-hidden rounded-lg">
         <Image
           src={product.productImages[0] || "/images/placeholder-product.jpg"}
           alt={product.productTitle}
