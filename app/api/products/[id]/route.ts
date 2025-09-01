@@ -16,6 +16,7 @@ export async function GET(
       include: {
         agribusiness: {
           select: {
+            id: true,
             businessName: true,
             tradingType: true,
             primaryCropCategory: true,
@@ -23,11 +24,24 @@ export async function GET(
             facebookUrl: true,
             instagramUrl: true,
             websiteUrl: true,
-            subscriptionTier: true,
+            subscription: {
+              select: {
+                tier: true,
+                status: true,
+                billingCycle: true,
+                nextBillingDate: true
+              }
+            },
             businessImage: true,
             state: true,
             country: true,
             contactNo: true,
+            user: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
           }
         }
       }
@@ -79,6 +93,9 @@ export async function PUT(
       pricing,
       currency,
       allowBidding,
+      minimumIncrement,
+      auctionEndTime,
+      autoAcceptThreshold,
       storageConditions,
       expiryDate,
       location,
@@ -117,6 +134,9 @@ export async function PUT(
         ...(pricing && { pricing: parseFloat(pricing) }),
         ...(currency && { currency }),
         ...(allowBidding !== undefined && { allowBidding }),
+        ...(minimumIncrement !== undefined && { minimumIncrement: parseFloat(minimumIncrement) }),
+        ...(auctionEndTime !== undefined && { auctionEndTime: auctionEndTime ? new Date(auctionEndTime) : null }),
+        ...(autoAcceptThreshold !== undefined && { autoAcceptThreshold: parseFloat(autoAcceptThreshold) }),
         ...(storageConditions !== undefined && { storageConditions }),
         ...(expiryDate !== undefined && { expiryDate: expiryDate ? new Date(expiryDate) : null }),
         ...(location && { location }),
@@ -137,7 +157,13 @@ export async function PUT(
             facebookUrl: true,
             instagramUrl: true,
             websiteUrl: true,
-            subscriptionTier: true,
+            subscription: {
+              select: {
+                tier: true,
+                status: true,
+                billingCycle: true
+              }
+            },
             businessImage: true,
             state: true,
             country: true,

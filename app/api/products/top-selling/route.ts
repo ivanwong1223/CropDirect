@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category');
 
     const whereClause: any = {
-      status: 'AVAILABLE'
+      status: 'ACTIVE'
     };
     
     if (category) {
@@ -55,12 +55,12 @@ export async function GET(request: NextRequest) {
     // Transform data to include popularity metrics
     const transformedProducts = topProducts.map(product => ({
       id: product.id,
-      name: product.name,
+      name: product.productTitle,
       description: product.description,
-      price: product.price,
-      unit: product.unit,
+      price: product.pricing,
+      unit: product.unitOfMeasurement,
       cropCategory: product.cropCategory,
-      imageUrl: product.imageUrl,
+      imageUrl: (product.productImages && product.productImages.length > 0) ? product.productImages[0] : null,
       orderCount: product._count.orders,
       seller: {
         name: product.agribusiness.businessName,

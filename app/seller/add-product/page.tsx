@@ -49,6 +49,20 @@ interface FormData {
   selectedLogistics: string;
 }
 
+interface UploadedImage {
+  file: File;
+  url?: string;
+  uploading?: boolean;
+  error?: string;
+}
+
+// Interface for S3 upload response
+interface S3UploadedFile {
+  url: string;
+  key: string;
+  size: number;
+}
+
 export default function AddProduct() {
   const router = useRouter();
   const locationInputRef = useRef<HTMLInputElement>(null);
@@ -60,7 +74,10 @@ export default function AddProduct() {
 
   // Validation state for quantity available
   const [quantityValidationError, setQuantityValidationError] = useState('');
-
+  
+  // State for uploaded images with S3 URLs
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
 
   const [formData, setFormData] = useState<FormData>({
@@ -215,16 +232,104 @@ export default function AddProduct() {
   };
 
   /**
-   * Handle image upload
+   * Handle image upload to S3
    * @param event - File input change event
    */
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    if (files.length + formData.productImages.length <= 3) {
-      setFormData(prev => ({
-        ...prev,
-        productImages: [...prev.productImages, ...files]
+    
+    if (files.length + uploadedImages.length > 3) {
+      alert('You can only upload up to 3 images');
+      return;
+    }
+
+    setIsUploading(true);
+    
+    try {
+      // Create initial uploaded image objects
+      const newImages: UploadedImage[] = files.map(file => ({
+        file,
+        uploading: true
       }));
+      
+      setUploadedImages(prev => [...prev, ...newImages]);
+      
+      // Upload files to S3
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append('files', file);
+      });
+      
+      const response = await fetch('/api/upload/s3', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Update uploaded images with S3 URLs
+        setUploadedImages(prev => {
+          const updated = [...prev];
+          const startIndex = updated.length - files.length;
+          
+          result.data.files.forEach((uploadedFile: S3UploadedFile, index: number) => {
+            if (updated[startIndex + index]) {
+              updated[startIndex + index] = {
+                ...updated[startIndex + index],
+                url: uploadedFile.url,
+                uploading: false
+              };
+            }
+          });
+          
+          return updated;
+        });
+        
+        console.log('Images uploaded successfully:', result.data.files);
+      } else {
+        // Handle upload error
+        setUploadedImages(prev => {
+          const updated = [...prev];
+          const startIndex = updated.length - files.length;
+          
+          for (let i = startIndex; i < updated.length; i++) {
+            updated[i] = {
+              ...updated[i],
+              uploading: false,
+              error: result.error || 'Upload failed'
+            };
+          }
+          
+          return updated;
+        });
+        
+        alert(`Upload failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      
+      // Update images with error state
+      setUploadedImages(prev => {
+        const updated = [...prev];
+        const startIndex = updated.length - files.length;
+        
+        for (let i = startIndex; i < updated.length; i++) {
+          updated[i] = {
+            ...updated[i],
+            uploading: false,
+            error: 'Upload failed'
+          };
+        }
+        
+        return updated;
+      });
+      
+      alert('Failed to upload images. Please try again.');
+    } finally {
+      setIsUploading(false);
+      // Clear the file input
+      event.target.value = '';
     }
   };
 
@@ -233,10 +338,7 @@ export default function AddProduct() {
    * @param index - Index of image to remove
    */
   const removeImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      productImages: prev.productImages.filter((_, i) => i !== index)
-    }));
+    setUploadedImages(prev => prev.filter((_, i) => i !== index));
   };
 
   /**
@@ -284,13 +386,22 @@ export default function AddProduct() {
         return;
       }
 
-      // Convert images to base64 data URLs for transport
-      let imageData: string[] = [];
-      try {
-        imageData = await Promise.all(formData.productImages.map(readFileAsDataURL));
-      } catch (err) {
-        console.error('Failed to read images', err);
-        alert('Failed to process images. Please try again.');
+      // Get S3 URLs from uploaded images
+      const imageUrls = uploadedImages
+        .filter(img => img.url && !img.error)
+        .map(img => img.url!);
+      
+      // Check if there are any images still uploading
+      const stillUploading = uploadedImages.some(img => img.uploading);
+      if (stillUploading) {
+        alert('Please wait for all images to finish uploading.');
+        return;
+      }
+      
+      // Check for upload errors
+      const hasErrors = uploadedImages.some(img => img.error);
+      if (hasErrors) {
+        alert('Some images failed to upload. Please remove them and try again.');
         return;
       }
 
@@ -312,7 +423,7 @@ export default function AddProduct() {
         storageConditions: formData.storageConditions,
         expiryDate: formData.expiryDate?.toISOString(),
         location: formData.location,
-        productImages: imageData,
+        productImages: imageUrls,
         shippingMethod: formData.shippingMethod,
         directShippingCost: formData.directShippingCost,
         selectedLogistics: formData.selectedLogistics
@@ -354,6 +465,7 @@ export default function AddProduct() {
           directShippingCost: '',
           selectedLogistics: ''
         });
+        setUploadedImages([]);
         // Redirect to product list with success notification data
         router.push(`/seller/product-list?created=true&productTitle=${encodeURIComponent(productTitle)}`);
       } else {
@@ -810,45 +922,75 @@ export default function AddProduct() {
                 <div className="text-center">
                   <Upload className="mx-auto h-12 w-12 text-gray-400" />
                   <div className="mt-4">
-                    <Label htmlFor="imageUpload" className="cursor-pointer">
+                    <Label htmlFor="imageUpload" className={`cursor-pointer ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
                       <span className="mt-2 block text-sm font-medium text-gray-900">
-                        Upload Images
+                        {isUploading ? 'Uploading...' : 'Upload Images'}
                       </span>
                       <span className="mt-1 block text-sm text-gray-500">
-                        You can upload up to 3 images (JPG/PNG)
+                        You can upload up to 3 images (JPG/PNG/WebP)
                       </span>
                     </Label>
                     <Input
                       id="imageUpload"
                       type="file"
                       multiple
-                      accept="image/jpeg,image/png"
+                      accept="image/jpeg,image/png,image/webp"
                       onChange={handleImageUpload}
+                      disabled={isUploading || uploadedImages.length >= 3}
                       className="hidden"
                     />
                   </div>
                 </div>
               </div>
               
-              {formData.productImages.length > 0 && (
+              {uploadedImages.length > 0 && (
                 <div className="grid grid-cols-3 gap-4">
-                  {formData.productImages.map((file, index) => (
+                  {uploadedImages.map((uploadedImage, index) => (
                     <div key={index} className="relative border-2 border-gray-200 rounded-lg shadow-sm bg-white">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt={`Product ${index + 1}`}
-                        className="w-full h-full object-cover rounded-lg"
-                      />
+                      {uploadedImage.uploading ? (
+                        <div className="w-full h-32 flex items-center justify-center bg-gray-100 rounded-lg">
+                          <div className="text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-2"></div>
+                            <span className="text-sm text-gray-600">Uploading...</span>
+                          </div>
+                        </div>
+                      ) : uploadedImage.error ? (
+                        <div className="w-full h-32 flex items-center justify-center bg-red-50 rounded-lg border-red-200">
+                          <div className="text-center">
+                            <span className="text-sm text-red-600">Upload failed</span>
+                            <p className="text-xs text-red-500 mt-1">{uploadedImage.error}</p>
+                          </div>
+                        </div>
+                      ) : uploadedImage.url ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={uploadedImage.url}
+                          alt={`Product ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+                      ) : (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={URL.createObjectURL(uploadedImage.file)}
+                          alt={`Product ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+                      )}
                       <Button
                         type="button"
                         variant="destructive"
                         size="sm"
                         className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 shadow-md"
                         onClick={() => removeImage(index)}
+                        disabled={uploadedImage.uploading}
                       >
                         ×
                       </Button>
+                      {uploadedImage.url && (
+                        <div className="absolute bottom-1 right-1">
+                          <CheckCircle className="w-4 h-4 text-green-600 bg-white rounded-full" />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

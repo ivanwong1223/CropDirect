@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-07-30.basil',
-});
+// Initialize Stripe client with the default API version configured on the account.
+// Avoid hardcoding apiVersion to prevent SDK/type mismatches.
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
+/**
+ * POST /api/confirm-payment
+ * Retrieve a Payment Intent by ID and return its status and metadata.
+ */
 export async function POST(request: NextRequest) {
   try {
     const { paymentIntentId } = await request.json();
@@ -20,13 +24,7 @@ export async function POST(request: NextRequest) {
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
     if (paymentIntent.status === 'succeeded') {
-      // Here you would typically:
-      // 1. Update user's subscription in your database
-      // 2. Send confirmation email
-      // 3. Log the transaction
-      
       const { planId, billingCycle } = paymentIntent.metadata;
-      
       return NextResponse.json({
         success: true,
         paymentStatus: paymentIntent.status,

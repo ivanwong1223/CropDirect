@@ -16,7 +16,7 @@ enum Role {
   AGRIBUSINESS
   BUSINESS_BUYER
   LOGISTICS_PARTNER
-  ADMIN
+  // ADMIN
 }
 
 // Verification status enum
@@ -40,15 +40,8 @@ model User {
   agribusiness     Agribusiness?
   businessBuyer    BusinessBuyer?
   logisticsPartner LogisticsPartner?
-  admin            Admin?
-
   // Sessions
   sessions Session[]
-}
-
-model FrequentlyAskedQuestion {
-  id          String   @id @default(uuid())
-  question    String
 }
 
 // Agribusiness profile
@@ -79,12 +72,11 @@ model Agribusiness {
   kybForm            KYBForm?
   // Relationship to products
   products           Product[]
-  // Relationship to orders  
-  orders             Order[]
-  // Relationship to sales transactions
-  salesTransactions  SalesTransaction[]
+  orders              Order[]
   // Relationship to subscription
   subscription       Subscription?
+  // Relationship to feedback
+  feedback           Feedback[]
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 }
@@ -133,6 +125,7 @@ model BusinessBuyer {
   preferredPaymentMethods String[]           @default([])
   // Relationship to orders
   orders                  Order[]
+  feedback                Feedback[]
   createdAt               DateTime           @default(now())
   updatedAt               DateTime           @updatedAt
 }
@@ -155,16 +148,16 @@ model LogisticsPartner {
 }
 
 // Admin profile
-model Admin {
-  id          String    @id @default(uuid())
-  userId      String    @unique
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  department  String?
-  permissions String[]  @default(["ALL"]) // All admins have full permissions
-  lastLogin   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
+// model Admin {
+//   id          String    @id @default(uuid())
+//   userId      String    @unique
+//   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   department  String?
+//   permissions String[]  @default(["ALL"]) // All admins have full permissions
+//   lastLogin   DateTime?
+//   createdAt   DateTime  @default(now())
+//   updatedAt   DateTime  @updatedAt
+// }
 
 // Session model for authentication
 model Session {
@@ -228,6 +221,7 @@ model Product {
   
   // Relationships
   orders                Order[]
+  feedback              Feedback[]
   
   @@index([agribusinessId])
   @@index([cropCategory])
@@ -237,46 +231,96 @@ model Product {
 // Order model to represent a purchase made by a BusinessBuyer for a Product
 model Order {
   id               String         @id @default(uuid())
-  orderId          String         @unique
   buyerId          String
   buyer            BusinessBuyer  @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  sellerId         String
+  seller           Agribusiness   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   productId        String
   product          Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
-  agribusinessId   String
-  agribusiness     Agribusiness   @relation(fields: [agribusinessId], references: [id], onDelete: Cascade)
+  
+  // Order details
   quantity         Int
   unitPrice        Decimal        @db.Decimal(10, 2)
-  currency         String         @default("RM")
-  paymentMethod    String
-  // derived total = unitPrice * quantity (store snapshot)
+  subtotal         Decimal        @db.Decimal(12, 2)
+  shippingCost     Decimal        @db.Decimal(10, 2) @default(0)
   totalAmount      Decimal        @db.Decimal(12, 2)
+  currency         String         @default("RM")
+  status           String         @default("pending") // pending, confirmed, shipped, delivered, cancelled
+  
+  // Buyer information
+  deliveryAddress  String
+  
+  // Shipping details
+  estimatedDeliveryTime String?
+  shippingDistance Float?
+  
+  // Payment details
+  paymentMethod    String         @default("card")
+  paymentStatus    String?
+  stripeSessionId  String?
+  stripePaymentIntentId String?
+  
+  // Bid-related fields
+  isBid            Boolean        @default(false)
+  bidPlacedAt      DateTime?
+  bidAcceptedAt    DateTime?
+  bidRejectedAt    DateTime?
+  
+  // Additional notes
+  notes            String?
+  
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
+  feedback         Feedback?
   // Relationship
   transactions     SalesTransaction[]
 
   @@index([buyerId])
+  @@index([sellerId])
+  @@index([productId])
+  @@index([status])
+}
+
+model Feedback {
+  id              String         @id @default(uuid())
+  orderId         String         @unique
+  order           Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  buyerId         String
+  buyer           BusinessBuyer  @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  agribusinessId  String
+  agribusiness    Agribusiness   @relation(fields: [agribusinessId], references: [id], onDelete: Cascade)
+
+  // Ratings
+  productRating   Int            // 1–5 stars for product
+  sellerRating    Int            // 1–5 stars for seller
+  // Feedback text
+  productReview   String?        // buyer’s review about product quality
+  sellerReview    String?        // buyer’s review about seller service
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
   @@index([productId])
   @@index([agribusinessId])
+  @@index([buyerId])
+  @@index([orderId])
 }
+
 
 // SalesTransaction model represents a completed payment to the seller for an order
 model SalesTransaction {
   id               String    @id @default(uuid())
-  invoiceId        String    @unique
   orderId          String
   order            Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  agribusinessId   String
-  agribusiness     Agribusiness @relation(fields: [agribusinessId], references: [id], onDelete: Cascade)
   amountPaid       Decimal   @db.Decimal(12, 2)
+  currency         String    @default("RM")
   paymentMethod    String
-  // duplicate reference fields for quick access in table views
-  productTitle     String
-  quantity         Int
+  stripePaymentIntentId String?
   paidAt           DateTime  @default(now())
 
-  @@index([agribusinessId])
   @@index([orderId])
   @@index([paidAt])
 }

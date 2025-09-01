@@ -111,7 +111,7 @@ const menuData: MenuSection[] = [
       {
         id: 'my-orders',
         name: 'My Orders',
-        route: '/buyer/orders',
+        route: '/buyer/my-orders',
         icon: 'ShoppingCart'
       },
       {

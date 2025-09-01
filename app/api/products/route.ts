@@ -218,6 +218,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate productImages are valid URLs (S3 URLs)
+    if (productImages && Array.isArray(productImages)) {
+      const invalidUrls = productImages.filter((url: string) => {
+        try {
+          new URL(url);
+          return !url.includes('amazonaws.com'); // Basic S3 URL validation
+        } catch {
+          return true;
+        }
+      });
+      
+      if (invalidUrls.length > 0) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Invalid image URLs provided' 
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Validate bidding-specific fields when allowBidding is true
     if (allowBidding) {
       if (!minimumIncrement || !auctionEndTime) {

@@ -55,6 +55,7 @@ import {
   Instagram
 } from 'lucide-react';
 import { toast } from 'sonner';
+import BidModal from '@/components/custom/BidModal'
 
 interface Product {
   id: string;
@@ -67,6 +68,10 @@ interface Product {
   pricing: number | string;
   currency: string;
   allowBidding: boolean;
+  // Bidding-specific fields
+  minimumIncrement?: number | string | null;
+  auctionEndTime?: string | null;
+  autoAcceptThreshold?: number | string | null;
   storageConditions: string | null;
   expiryDate: string | null;
   location: string;
@@ -107,12 +112,18 @@ export default function ProductDetailPage() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
+  const [isBidModalOpen, setIsBidModalOpen] = useState(false);
+  const [currentHighestBid, setCurrentHighestBid] = useState<number | undefined>(undefined);
+  // Remove unused states no longer required by BidModal
+  // const [buyerId, setBuyerId] = useState<string>('');
+  // const [deliveryAddress, setDeliveryAddress] = useState<string>('');
+  // const [purchaseOrderRef, setPurchaseOrderRef] = useState<string>('');
 
   useEffect(() => {
     if (params.id) {
       fetchProduct(params.id as string);
     }
-    
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
 
@@ -151,6 +162,14 @@ export default function ProductDetailPage() {
   };
 
   const handleBuyNow = () => {
+    if (!product) {
+      toast.error('Product information not available');
+      return;
+    }
+
+    // Redirect to checkout page with product and quantity parameters
+    const checkoutUrl = `/buyer/checkout?productId=${product.id}&quantity=${quantity}`;
+    router.push(checkoutUrl);
     toast.success('Redirecting to checkout...');
   };
 
@@ -159,7 +178,20 @@ export default function ProductDetailPage() {
   };
 
   const handlePlaceBid = () => {
-    toast.success('Bid placement feature coming soon');
+    setIsBidModalOpen(true);
+  };
+
+  const handleBidSubmit = async (bidAmount: number) => {
+    // Payment-first flow for bidding: route to checkout with bid params instead of calling the bids API directly
+    if (!product) return;
+
+    const qty = typeof quantity === 'string' ? parseInt(quantity) || 1 : quantity;
+    const checkoutUrl = `/buyer/checkout?productId=${product.id}&quantity=${qty}&isBid=true&bidUnitPrice=${bidAmount}`;
+
+    // Close modal and navigate to checkout where payment will be initiated
+    setIsBidModalOpen(false);
+    router.push(checkoutUrl);
+    toast.success('Proceeding to checkout for payment...');
   };
 
   const toggleWishlist = () => {
@@ -304,13 +336,42 @@ export default function ProductDetailPage() {
 
             {/* Pricing */}
             <div className="bg-green-50 p-4 rounded-lg mt-10">
-              <div className="text-3xl font-bold text-green-600 mb-2">
-                {product.currency} {formatPrice(product.pricing)}
-                <span className="text-lg font-normal text-gray-600">/{product.unitOfMeasurement}</span>
-              </div>
-              <div className="text-sm text-gray-600">
-                Total: {product.currency} {totalPrice.toFixed(2)}
-              </div>
+              {product.allowBidding ? (
+                <div>
+                  <div className="text-2xl font-bold text-green-600 mb-2">
+                    Starting Bid: {product.currency} {formatPrice(product.pricing)}
+                    <span className="text-lg font-normal text-gray-600">/{product.unitOfMeasurement}</span>
+                  </div>
+                  <div className="text-sm text-gray-600 mb-2 mt-4">
+                    Total: {product.currency} {(Number(product.pricing) * (typeof quantity === 'string' ? parseInt(quantity) || 0 : quantity)).toFixed(2)}
+                  </div>
+                  {product.minimumIncrement && (
+                    <div className="text-sm text-gray-600 mb-1">
+                      Minimum Increment: {product.currency} {formatPrice(product.minimumIncrement)}
+                    </div>
+                  )}
+                  {product.autoAcceptThreshold && (
+                    <div className="text-sm text-gray-600 mb-1">
+                      Auto-Accept at: {product.currency} {formatPrice(product.autoAcceptThreshold)}
+                    </div>
+                  )}
+                  {product.auctionEndTime && (
+                    <div className="text-sm text-red-600 font-medium">
+                      Auction Ends: {new Date(product.auctionEndTime).toLocaleString()}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <div className="text-3xl font-bold text-green-600 mb-2">
+                    {product.currency} {formatPrice(product.pricing)}
+                    <span className="text-lg font-normal text-gray-600">/{product.unitOfMeasurement}</span>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Total: {product.currency} {totalPrice.toFixed(2)}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Quantity and Availability */}
@@ -394,33 +455,49 @@ export default function ProductDetailPage() {
 
             {/* CTA Buttons */}
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-4">
-                <Button 
-                  onClick={handleAddToCart} 
-                  variant="outline"
-                  className="cursor-pointer w-full h-12 px-6 border-2 border-green-800 text-green-800 hover:bg-green-50 font-medium"
-                >
-                  <ShoppingCart size={16} className="mr-2" />
-                  Add To Cart
-                </Button>
-                <Button 
-                  onClick={handleBuyNow} 
-                  className="cursor-pointer w-full h-12 px-6 bg-green-800 hover:bg-green-900 text-white font-medium"
-                >
-                  Buy Now
-                </Button>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <Button onClick={handleRequestQuotation} variant="outline" className="cursor-pointer w-full h-12 px-6 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-medium">
-                  Request Quote
-                </Button>
-                {product.allowBidding && (
-                  <Button onClick={handlePlaceBid} variant="outline" className="cursor-pointer w-full h-12 px-6 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-medium">
+              {product.allowBidding ? (
+                // Bidding mode - Show only Place Bid button
+                <div className="grid grid-cols-2 gap-4">
+                  <Button 
+                    onClick={handleRequestQuotation} 
+                    variant="outline" 
+                    className="cursor-pointer w-full h-12 px-6 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-medium">
+                    Request Quote
+                  </Button>
+                  <Button 
+                    onClick={handlePlaceBid} 
+                    className="cursor-pointer w-full h-12 px-6 bg-green-800 hover:bg-green-900 text-white font-medium"
+                  >
                     Place Bid
                   </Button>
-                )}
-              </div>
+                </div>
+              ) : (
+                // Regular mode - Show Add to Cart and Buy Now
+                <div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button 
+                      onClick={handleAddToCart} 
+                      variant="outline"
+                      className="cursor-pointer w-full h-12 px-6 border-2 border-green-800 text-green-800 hover:bg-green-50 font-medium"
+                    >
+                      <ShoppingCart size={16} className="mr-2" />
+                      Add To Cart
+                    </Button>
+                    <Button 
+                      onClick={handleBuyNow} 
+                      className="cursor-pointer w-full h-12 px-6 bg-green-800 hover:bg-green-900 text-white font-medium"
+                    >
+                      Buy Now
+                    </Button>
+                  </div>
+                  
+                  <div className="mt-3">
+                    <Button onClick={handleRequestQuotation} variant="outline" className="cursor-pointer w-full h-12 px-6 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-medium">
+                      Request Quote
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>
@@ -438,6 +515,7 @@ export default function ProductDetailPage() {
                 {/* Business Image or Avatar */}
                 <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
                   {product.agribusiness.businessImage ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img 
                       src={product.agribusiness.businessImage} 
                       alt={product.agribusiness.businessName}
@@ -498,12 +576,12 @@ export default function ProductDetailPage() {
             </CardHeader>
             <CardContent>
               {/* Bio Section */}
-              {product.agribusiness.bio && (
+              {/* {product.agribusiness.bio && (
                 <div className="mb-6">
                   <Label className="text-sm font-medium text-gray-700">About</Label>
                   <p className="text-sm text-gray-600 mt-1">{product.agribusiness.bio}</p>
                 </div>
-              )}
+              )} */}
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
@@ -566,7 +644,7 @@ export default function ProductDetailPage() {
                 </div>
               </div>
               
-              <div className="flex space-x-4 mt-6">
+              <div className="flex space-x-4">
                 <div className="">
                   <Button 
                     onClick={handleAddToCart} 
@@ -591,119 +669,114 @@ export default function ProductDetailPage() {
           </Card>
         </motion.div>
 
-        {/* Detailed Product Info Tabs */}
+        {/* Detailed Product Info */}
         <motion.div 
-          className="mb-12"
+          className="mb-12 space-y-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
-          <Tabs defaultValue="description" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="description">Description</TabsTrigger>
-              <TabsTrigger value="storage">Storage & Expiry</TabsTrigger>
-              <TabsTrigger value="harvest">Harvest Info</TabsTrigger>
-              <TabsTrigger value="logistics">Logistics</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="description" className="mt-6">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="prose max-w-none">
-                    <p className="text-gray-700 leading-relaxed">
-                      {product.description || 'No detailed description available for this product.'}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="storage" className="mt-6">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
+          {/* Shipping Section */}
+          <div className='mt-14'>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Shipping</h3>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Truck size={20} className="text-blue-600" />
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Shipping Method</Label>
+                  <p className="text-gray-700">
+                    {product.shippingMethod === 'third-party' ? 'Third-party Logistics' : 
+                     product.shippingMethod === 'direct' ? 'Direct Shipping' : 
+                     'Standard shipping available'}
+                  </p>
+                </div>
+              </div>
+              {product.directShippingCost && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Shipping Cost</Label>
+                  <p className="text-gray-700">
+                    {product.currency} {formatPrice(product.directShippingCost || 0)}
+                  </p>
+                </div>
+              )}
+              {product.selectedLogistics && product.shippingMethod === 'third-party' && (
+                <div className="border p-4 bg-gray-50">
+                  <div className="space-y-3">
                     <div>
-                      <Label className="text-sm font-medium text-gray-700">Storage Conditions</Label>
-                      <p className="text-gray-700">
-                        {product.storageConditions || 'Standard storage conditions apply'}
+                      <Label className="text-sm font-medium text-gray-700">Selected Logistics Provider</Label>
+                      <p className="text-lg font-semibold text-gray-900 capitalize">
+                        {product.selectedLogistics}
                       </p>
                     </div>
-                    {product.expiryDate && (
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">Expiry Date</Label>
-                        <p className="text-gray-700">
-                          {new Date(product.expiryDate).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </p>
-                      </div>
-                    )}
+                    {(() => {
+                      const logisticsDetails: Record<string, { deliveryTime: string; rateMethod: string }> = {
+                        'fedex': { deliveryTime: '1-3 business days', rateMethod: 'Distance × Weight × RM 0.15/kg' },
+                        'dhl': { deliveryTime: '1-2 business days', rateMethod: 'Distance × Weight × RM 0.18/kg' },
+                        'pos laju': { deliveryTime: '2-5 business days', rateMethod: 'Distance × Weight × RM 0.12/kg' },
+                        'j&t express': { deliveryTime: '2-4 business days', rateMethod: 'Distance × Weight × RM 0.10/kg' }
+                      };
+                      
+                      const details = logisticsDetails[product.selectedLogistics?.toLowerCase() || ''];
+                      return details ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              Delivery: {details.deliveryTime}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            Rate: {details.rateMethod}
+                          </p>
+                          <p className="text-xs text-blue-600">
+                            * Shipping cost will be determined upon order confirmation
+                          </p>
+                        </div>
+                      ) : null;
+                    })()}
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="harvest" className="mt-6">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">Harvest Date</Label>
-                      <p className="text-gray-700">
-                        {new Date(product.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">Availability Window</Label>
-                      <p className="text-gray-700">Available now - Limited stock</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="logistics" className="mt-6">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <Truck size={20} className="text-blue-600" />
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">Shipping Method</Label>
-                        <p className="text-gray-700">
-                          {product.shippingMethod || 'Standard shipping available'}
-                        </p>
-                      </div>
-                    </div>
-                    {product.directShippingCost && (
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">Shipping Cost</Label>
-                        <p className="text-gray-700">
-                          {product.currency} {formatPrice(product.directShippingCost || 0)}
-                        </p>
-                      </div>
-                    )}
-                    {product.selectedLogistics && (
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">Logistics Provider</Label>
-                        <p className="text-gray-700">{product.selectedLogistics}</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Product Description Section */}
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Product Description</h3>
+            <div className="prose max-w-none">
+              <p className="text-gray-700 leading-relaxed">
+                {product.description || 'No detailed description available for this product.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Storage & Expiry Section */}
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Storage & Expiry</h3>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Storage Conditions</Label>
+                <p className="text-gray-700">
+                  {product.storageConditions || 'Standard storage conditions apply'}
+                </p>
+              </div>
+              {product.expiryDate && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Expiry Date</Label>
+                  <p className="text-gray-700">
+                    {new Date(product.expiryDate).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </motion.div>
 
         {/* Buyer Interaction Section */}
-        <motion.div 
+        {/* <motion.div 
           className="mb-12"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -732,10 +805,10 @@ export default function ProductDetailPage() {
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </motion.div> */}
 
         {/* Similar Products Section */}
-        {similarProducts.length > 0 && (
+        {/* {similarProducts.length > 0 && (
           <motion.div 
             className="mb-12"
             initial={{ opacity: 0, y: 20 }}
@@ -778,8 +851,29 @@ export default function ProductDetailPage() {
               ))}
             </div>
           </motion.div>
-        )}
+        )} */}
       </div>
+
+      {/* Bid Modal */}
+      {product && (
+        <BidModal
+          isOpen={isBidModalOpen}
+          onClose={() => setIsBidModalOpen(false)}
+          onSubmit={handleBidSubmit}
+          product={{
+            id: product.id,
+            title: product.productTitle,
+            currentPrice: Number(product.pricing),
+            minimumIncrement: Number(product.minimumIncrement) || 1,
+            currency: product.currency,
+            unitOfMeasurement: product.unitOfMeasurement,
+            auctionEndTime: product.auctionEndTime ? new Date(product.auctionEndTime) : undefined,
+            autoAcceptThreshold: Number(product.autoAcceptThreshold) || undefined,
+          }}
+          quantity={typeof quantity === 'string' ? parseInt(quantity) || 1 : quantity}
+          currentHighestBid={currentHighestBid}
+        />
+      )}
     </div>
   );
 }

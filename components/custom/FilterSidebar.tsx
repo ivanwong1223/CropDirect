@@ -127,6 +127,7 @@ export default function FilterSidebar({ isOpen, onClose, onFiltersChange }: Filt
                     onCheckedChange={(checked) => 
                       handleLocationChange(option.value, checked as boolean)
                     }
+                    className="border-2 border-gray-400 data-[state=checked]:border-green-600"
                   />
                   <Label 
                     htmlFor={`location-${option.value}`}
@@ -153,6 +154,7 @@ export default function FilterSidebar({ isOpen, onClose, onFiltersChange }: Filt
                     onCheckedChange={(checked) => 
                       handleCategoryChange(category.id, checked as boolean)
                     }
+                    className="border-2 border-gray-400 data-[state=checked]:border-green-600"
                   />
                   <Label 
                     htmlFor={`category-${category.id}`}
@@ -205,6 +207,7 @@ export default function FilterSidebar({ isOpen, onClose, onFiltersChange }: Filt
                     onCheckedChange={(checked) => 
                       handleServiceChange(option.value, checked as boolean)
                     }
+                    className="border-2 border-gray-400 data-[state=checked]:border-green-600"
                   />
                   <Label 
                     htmlFor={`service-${option.value}`}

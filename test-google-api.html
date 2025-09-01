@@ -1,25 +1,151 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Google Maps API Test</title>
+    <title>Google Maps Distance Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            max-width: 400px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            border-left: 4px solid #4CAF50;
+        }
+    </style>
 </head>
 <body>
-    <h1>Google Maps API Test</h1>
-    <input id="autocomplete" type="text" placeholder="Enter a location" style="width: 300px; padding: 10px;">
+    <h1>Google Maps Distance Calculator</h1>
+    
+    <div class="input-group">
+        <label for="origin">Origin Location:</label>
+        <input id="origin" type="text" placeholder="Enter starting location">
+    </div>
+    
+    <div class="input-group">
+        <label for="destination">Destination Location:</label>
+        <input id="destination" type="text" placeholder="Enter destination location">
+    </div>
+    
+    <button onclick="calculateDistance()">Calculate Distance</button>
+    
     <div id="result"></div>
 
     <script>
+        let originPlace = null;
+        let destinationPlace = null;
+        
+        /**
+         * Initialize Google Places Autocomplete for both input fields
+         */
         function initAutocomplete() {
-            const input = document.getElementById('autocomplete');
-            const autocomplete = new google.maps.places.Autocomplete(input, {
+            // Initialize autocomplete for origin input
+            const originInput = document.getElementById('origin');
+            const originAutocomplete = new google.maps.places.Autocomplete(originInput, {
                 types: ['geocode'],
                 componentRestrictions: { country: 'my' }
             });
 
-            autocomplete.addListener('place_changed', function() {
-                const place = autocomplete.getPlace();
+            // Initialize autocomplete for destination input
+            const destinationInput = document.getElementById('destination');
+            const destinationAutocomplete = new google.maps.places.Autocomplete(destinationInput, {
+                types: ['geocode'],
+                componentRestrictions: { country: 'my' }
+            });
+
+            // Store selected origin place
+            originAutocomplete.addListener('place_changed', function() {
+                originPlace = originAutocomplete.getPlace();
+                console.log('Origin selected:', originPlace.formatted_address);
+            });
+            
+            // Store selected destination place
+            destinationAutocomplete.addListener('place_changed', function() {
+                destinationPlace = destinationAutocomplete.getPlace();
+                console.log('Destination selected:', destinationPlace.formatted_address);
+            });
+        }
+        
+        /**
+         * Calculate distance between two selected locations using Google Maps Distance Matrix API
+         */
+        function calculateDistance() {
+            if (!originPlace || !destinationPlace) {
                 document.getElementById('result').innerHTML = 
-                    '<p>Selected: ' + place.formatted_address + '</p>';
+                    '<p style="color: red;">Please select both origin and destination locations from the dropdown suggestions.</p>';
+                return;
+            }
+            
+            if (!originPlace.geometry || !destinationPlace.geometry) {
+                document.getElementById('result').innerHTML = 
+                    '<p style="color: red;">Unable to get coordinates for selected locations.</p>';
+                return;
+            }
+            
+            // Create Distance Matrix service
+            const service = new google.maps.DistanceMatrixService();
+            
+            // Calculate distance
+            service.getDistanceMatrix({
+                origins: [originPlace.geometry.location],
+                destinations: [destinationPlace.geometry.location],
+                travelMode: google.maps.TravelMode.DRIVING,
+                unitSystem: google.maps.UnitSystem.METRIC,
+                avoidHighways: false,
+                avoidTolls: false
+            }, function(response, status) {
+                if (status === 'OK') {
+                    const element = response.rows[0].elements[0];
+                    
+                    if (element.status === 'OK') {
+                        const distance = element.distance.text;
+                        const duration = element.duration.text;
+                        
+                        document.getElementById('result').innerHTML = 
+                            '<h3>Distance Calculation Result:</h3>' +
+                            '<p><strong>From:</strong> ' + originPlace.formatted_address + '</p>' +
+                            '<p><strong>To:</strong> ' + destinationPlace.formatted_address + '</p>' +
+                            '<p><strong>Distance:</strong> ' + distance + '</p>' +
+                            '<p><strong>Estimated Travel Time:</strong> ' + duration + '</p>';
+                    } else {
+                        document.getElementById('result').innerHTML = 
+                            '<p style="color: red;">Unable to calculate distance: ' + element.status + '</p>';
+                    }
+                } else {
+                    document.getElementById('result').innerHTML = 
+                        '<p style="color: red;">Distance calculation failed: ' + status + '</p>';
+                }
             });
         }
 

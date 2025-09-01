@@ -325,7 +325,7 @@ const KYBForm: React.FC = () => {
               }`}>
                 {kybStatus.kybStatus === 'APPROVED' && 'Congratulations! Your business has been verified. You can now start selling on CropDirect.'}
                 {kybStatus.kybStatus === 'REJECTED' && 'Your verification was rejected. Please see the reason below and resubmit with correct information.'}
-                {kybStatus.kybStatus === 'PENDING' && 'Your application is being reviewed by our admin team. This usually takes 2-3 business days.'}
+                {kybStatus.kybStatus === 'PENDING' && 'Your application is being reviewed under OCR scanning. This usually takes 1-2 business days.'}
                 {kybStatus.kybStatus === 'REQUIRES_RESUBMISSION' && 'Please review the feedback and resubmit your application with the required changes.'}
               </p>
             </div>
@@ -578,7 +578,7 @@ const KYBForm: React.FC = () => {
                 </h3>
                 <div className="mt-2 text-sm text-blue-700">
                   <p>
-                    Your KYB application will be reviewed by our admin team within 2-3 business days. 
+                    Your KYB application will be reviewed through OCR scan within 1-2 business days. 
                     You will receive a notification once the review is complete.
                   </p>
                 </div>

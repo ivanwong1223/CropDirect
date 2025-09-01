@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@/app/generated/prisma';
+import { PrismaClient, Prisma } from '@/app/generated/prisma';
 
 const prisma = new PrismaClient();
 
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '5');
     const location = searchParams.get('location');
 
-    const whereClause: any = {
+    const whereClause: Prisma.AgribusinessWhereInput = {
       kybStatus: 'APPROVED'
     };
     
@@ -32,18 +32,18 @@ export async function GET(request: NextRequest) {
           select: {
             products: {
               where: {
-                status: 'AVAILABLE'
+                status: 'ACTIVE'
               }
             }
           }
         },
         products: {
           where: {
-            status: 'AVAILABLE'
+            status: 'ACTIVE'
           },
           select: {
             cropCategory: true,
-            imageUrl: true
+            productImages: true
           },
           take: 3,
           orderBy: {
@@ -71,12 +71,15 @@ export async function GET(request: NextRequest) {
       return {
         id: seller.id,
         businessName: seller.businessName,
-        description: seller.description,
+        description: seller.bio,
         location: `${seller.state}, ${seller.country}`,
         businessImage: seller.businessImage,
         productCount: seller._count.products,
         categories: categories.slice(0, 3), // Top 3 categories
-        recentProducts: seller.products.map(p => p.imageUrl).filter(Boolean).slice(0, 3),
+        recentProducts: seller.products
+          .map(p => (p.productImages && p.productImages.length > 0 ? p.productImages[0] : null))
+          .filter(Boolean)
+          .slice(0, 3),
         joinedDate: seller.createdAt
       };
     });
