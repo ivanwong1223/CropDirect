@@ -265,7 +265,7 @@ export default function BuyerLayout({
           return [] as PendingImage[];
         });
       } catch (err) {
-        // eslint-disable-next-line no-console
+        
         console.error(err);
       } finally {
         setUploading(false);
