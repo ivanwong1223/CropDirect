@@ -45,6 +45,13 @@ interface OrderDetails {
   createdAt: string;
   isBid?: boolean;
   notes?: string;
+  transactions?: {
+    id: string;
+    amountPaid: number;
+    currency: string;
+    paymentMethod: string;
+    paidAt: string;
+  }[];
   product: {
     id: string;
     productTitle: string;
@@ -188,7 +195,7 @@ export default function OrderConfirmationPage() {
               {!isPaymentSuccessful 
                 ? 'We are processing your payment. Please wait for confirmation.'
                 : isBidOrder && isOrderPending
-                ? 'Your bid has been submitted and payment processed. Waiting for seller approval.'
+                ? 'Waiting for seller approval. Your payment will be automatically refunded if your bid is not accepted.'
                 : 'Thank you for your purchase. Your order has been successfully placed.'}
             </p>
             <div className="mt-4">
@@ -496,7 +503,7 @@ export default function OrderConfirmationPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Transaction ID:</span>
                     <span className="text-sm font-mono text-gray-800">
-                      {paymentSession?.id.slice(-8).toUpperCase()}
+                      {order?.transactions?.[0]?.id}
                     </span>
                   </div>
                   

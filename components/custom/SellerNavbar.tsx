@@ -95,6 +95,20 @@ export default function SellerNavbar({ className }: SellerNavbarProps) {
       return breadcrumbs;
     }
 
+    if (pathname.startsWith('/seller/orders/')) {
+      breadcrumbs.push({
+        label: 'Orders',
+        href: '/seller/orders',
+        isActive: false
+      });
+      breadcrumbs.push({
+        label: 'Order Details',
+        href: pathname,
+        isActive: true
+      });
+      return breadcrumbs;
+    }
+
     if (pathname === '/seller/my-profile') {
       breadcrumbs.push({
         label: 'My Profile',

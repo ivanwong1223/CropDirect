@@ -19,6 +19,7 @@ import {
   Receipt,
   User
 } from 'lucide-react';
+import { getUserData } from '@/lib/localStorage';
 
 interface SellerSidebarProps {
   sidebarOpen?: boolean;
@@ -76,10 +77,23 @@ export default function SellerSidebar({
 
   /**
    * Handle menu item click navigation
-   * @param item - Menu item to navigate to
+   * - If navigating to seller chat, append devUserId from localStorage so chat API can identify the seller Ivan wong
    */
   const handleMenuItemClick = (item: MenuItem) => {
     setActiveMenuItem(item.id);
+
+    if (item.route === '/seller/chat') {
+      try {
+        const uid = getUserData()?.id;
+        if (uid) {
+          router.push(`${item.route}?devUserId=${encodeURIComponent(uid)}`);
+          return;
+        }
+      } catch (err) {
+        // Swallow errors and fall back to default navigation
+      }
+    }
+
     router.push(item.route);
   };
 

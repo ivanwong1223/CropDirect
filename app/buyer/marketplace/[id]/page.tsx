@@ -52,10 +52,12 @@ import {
   Calendar,
   Package,
   Shield,
+  Quote,
   Instagram
 } from 'lucide-react';
 import { toast } from 'sonner';
 import BidModal from '@/components/custom/BidModal'
+import { getUserData } from '@/lib/localStorage'
 
 interface Product {
   id: string;
@@ -82,6 +84,7 @@ interface Product {
   status: string;
   createdAt: string;
   agribusiness: {
+    id: string; // added so we can open chat by seller (agribusiness) id
     businessName: string;
     tradingType: string;
     primaryCropCategory: string;
@@ -94,6 +97,7 @@ interface Product {
     state: string;
     country: string;
     contactNo: string;
+    user?: { id: string; name: string };
   };
 }
 
@@ -197,6 +201,42 @@ export default function ProductDetailPage() {
   const toggleWishlist = () => {
     setIsWishlisted(!isWishlisted);
     toast.success(isWishlisted ? 'Removed from wishlist' : 'Added to wishlist');
+  };
+
+  const handleChatWithSeller = () => {
+    if (!product) return;
+    const user = getUserData();
+    const buyerUserId = user?.id;
+    const sellerId = product.agribusiness?.id; // use agribusiness id for chat sellerId
+
+    if (!buyerUserId) {
+      toast.error('Please sign in to start a chat');
+      router.push('/sign-in');
+      return;
+    }
+    if (!sellerId) {
+      toast.error('Seller information is unavailable');
+      return;
+    }
+
+    const qtyNum = typeof quantity === 'string' ? parseInt(quantity) || 1 : quantity;
+    const firstImage = product.productImages?.[0] || null;
+
+    // Open floating chat widget in BuyerLayout and ensure/select the room for this seller
+    // Also pass compact product context so the chat can render a fixed product card at the top
+    window.dispatchEvent(new CustomEvent('buyer-chat:open', { 
+      detail: { 
+        sellerId, 
+        product: {
+          id: product.id,
+          title: product.productTitle,
+          currency: product.currency,
+          price: product.pricing,
+          thumbnail: firstImage,
+          quantity: qtyNum,
+        }
+      } 
+    }));
   };
 
   const totalPrice = product ? (Number(product.pricing) || 0) * (typeof quantity === 'string' ? parseInt(quantity) || 0 : quantity) : 0;
@@ -476,24 +516,19 @@ export default function ProductDetailPage() {
                 <div>
                   <div className="grid grid-cols-2 gap-4">
                     <Button 
-                      onClick={handleAddToCart} 
+                      onClick={handleRequestQuotation} 
                       variant="outline"
-                      className="cursor-pointer w-full h-12 px-6 border-2 border-green-800 text-green-800 hover:bg-green-50 font-medium"
+                      size="sm"
+                      className="mr-2 cursor-pointer h-12 px-4 border-2 border-green-800 text-green-800 hover:bg-green-50 font-medium"
                     >
-                      <ShoppingCart size={16} className="mr-2" />
-                      Add To Cart
+                      <Quote size={16} className="mr-3 text-green-800 fill-current" />
+                      Request Quote
                     </Button>
                     <Button 
                       onClick={handleBuyNow} 
                       className="cursor-pointer w-full h-12 px-6 bg-green-800 hover:bg-green-900 text-white font-medium"
                     >
                       Buy Now
-                    </Button>
-                  </div>
-                  
-                  <div className="mt-3">
-                    <Button onClick={handleRequestQuotation} variant="outline" className="cursor-pointer w-full h-12 px-6 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-medium">
-                      Request Quote
                     </Button>
                   </div>
                 </div>
@@ -647,7 +682,7 @@ export default function ProductDetailPage() {
               <div className="flex space-x-4">
                 <div className="">
                   <Button 
-                    onClick={handleAddToCart} 
+                    onClick={handleChatWithSeller}  
                     variant="outline"
                     size="sm"
                     className="mr-2 cursor-pointer h-10 px-4 border-2 border-green-800 text-green-800 hover:bg-green-50 font-medium"

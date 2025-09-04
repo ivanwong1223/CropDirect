@@ -23,7 +23,6 @@ export async function GET(request: NextRequest) {
         companyAddress: true,
         contactNo: true,
         businessImage: true,
-        verificationStatus: true,
         loyaltyPoints: true,
         preferredPaymentMethods: true,
         user: {

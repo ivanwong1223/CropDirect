@@ -53,17 +53,17 @@ const menuData: MenuSection[] = [
         icon: 'ShoppingCart'
       },
       {
+        id: 'message',
+        name: 'Messages',
+        route: '/seller/chat',
+        badge: '5',
+        icon: 'MessageSquare'
+      },
+      {
         id: 'market',
         name: 'Market Feed',
         route: '/seller/news-feed',
         icon: 'TrendingUp'
-      },
-      {
-        id: 'message',
-        name: 'Messages',
-        route: '/seller/chat-box',
-        badge: '5',
-        icon: 'MessageSquare'
       },
       {
         id: 'payment-history',

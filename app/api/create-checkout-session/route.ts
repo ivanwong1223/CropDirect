@@ -200,7 +200,8 @@ export async function GET(request: NextRequest) {
     const existingOrder = await prisma.order.findFirst({
       where: { stripeSessionId: session.id },
       include: {
-        product: { include: { agribusiness: true } }
+        product: { include: { agribusiness: true } },
+        transactions: true
       }
     });
 
@@ -332,7 +333,8 @@ export async function GET(request: NextRequest) {
           include: {
             product: {
               include: { agribusiness: true }
-            }
+            },
+            transactions: true
           }
         });
 
@@ -346,10 +348,10 @@ export async function GET(request: NextRequest) {
           }
         });
 
-        // Create sales transaction record for receipt/invoice tracking (only if payment is successful AND order is confirmed)
-        // For pending bid orders, the transaction will be created when the seller accepts the bid
-        if (session.payment_status === 'paid' && orderStatus === 'confirmed') {
-          await tx.salesTransaction.create({
+        // Create sales transaction record for receipt/invoice tracking (whenever payment is successful)
+        // This includes both regular orders and bid orders - refunds will be handled separately if bids are rejected
+        if (session.payment_status === 'paid') {
+          const tempTransaction = await tx.salesTransaction.create({
             data: {
               orderId: createdOrder.id,
               amountPaid: orderTotalAmount,
@@ -358,6 +360,13 @@ export async function GET(request: NextRequest) {
               stripePaymentIntentId: session.payment_intent as string,
               paidAt: new Date(),
             }
+          });
+
+          // Generate formatted transaction ID and update the record
+          const formattedTransactionId = `TXN-${tempTransaction.id.slice(-8).toUpperCase()}`;
+          await tx.salesTransaction.update({
+            where: { id: tempTransaction.id },
+            data: { id: formattedTransactionId }
           });
         }
 

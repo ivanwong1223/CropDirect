@@ -103,6 +103,12 @@ export interface SalesTransaction {
   amountPaid: number;
   currency: string;
   paidAt: string;
+  // Refund tracking fields
+  isRefunded?: boolean;
+  refundAmount?: number;
+  refundReason?: string;
+  refundedAt?: string;
+  stripeRefundId?: string;
 }
 
 // Dashboard statistics

@@ -105,7 +105,6 @@ export async function POST(request: NextRequest) {
             id: result.buyer.id,
             companyName: result.buyer.companyName,
             companyType: result.buyer.companyType,
-            verificationStatus: result.buyer.verificationStatus,
             businessImage: result.buyer.businessImage,
           },
         },

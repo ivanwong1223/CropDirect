@@ -112,6 +112,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const orderId = searchParams.get('orderId');
     const userId = searchParams.get('userId');
+    const sellerId = searchParams.get('sellerId');
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
+    const isBid = searchParams.get('isBid');
 
     const statusParam = searchParams.get('status'); // all | active | completed | cancelled | pending | paid | shipped | delivered | cancelled
     const search = searchParams.get('search')?.trim(); // product name / seller
@@ -127,9 +131,10 @@ export async function GET(request: NextRequest) {
               agribusiness: true
             }
           },
-          buyer: true,
+          buyer: { include: { user: true } },
           seller: true,
           feedback: true,
+          transactions: { select: { id: true }, orderBy: { paidAt: 'desc' } },
         }
       });
 
@@ -146,6 +151,81 @@ export async function GET(request: NextRequest) {
           ...order,
           orderNumber: order.id
         }
+      });
+    }
+
+    // NEW: Seller listing support
+    if (sellerId) {
+      const whereClause: Prisma.OrderWhereInput = { sellerId };
+
+      if (statusParam && statusParam !== 'all') {
+        if (statusParam === 'active') {
+          whereClause.status = { in: ['pending', 'paid', 'shipped'] };
+        } else if (statusParam === 'completed') {
+          whereClause.status = 'delivered';
+        } else if (statusParam === 'cancelled') {
+          whereClause.status = 'cancelled';
+        } else {
+          whereClause.status = statusParam;
+        }
+      }
+
+      if (search && search.length > 0) {
+        whereClause.OR = [
+          // Product title
+          { product: { is: { productTitle: { contains: search, mode: 'insensitive' } } } },
+          // Buyer company name
+          { buyer: { is: { companyName: { contains: search, mode: 'insensitive' } } } },
+          // Buyer user name
+          { buyer: { is: { user: { is: { name: { contains: search, mode: 'insensitive' } } } } } },
+        ];
+      }
+
+      // Date range filter
+      if (dateFrom || dateTo) {
+        const createdAt: { gte?: Date; lte?: Date } = {};
+        if (dateFrom) createdAt.gte = new Date(dateFrom);
+        if (dateTo) {
+          const to = new Date(dateTo);
+          to.setHours(23, 59, 59, 999);
+          createdAt.lte = to;
+        }
+        whereClause.createdAt = createdAt;
+      }
+
+      // Bid filter
+      if (isBid === 'true') {
+        whereClause.isBid = true;
+      } else if (isBid === 'false') {
+        whereClause.isBid = false;
+      }
+
+      let orderBy: Prisma.OrderOrderByWithRelationInput = { createdAt: 'desc' };
+      if (sort === 'oldest') orderBy = { createdAt: 'asc' };
+      if (sort === 'amount') orderBy = { totalAmount: 'desc' };
+
+      const orders = await prisma.order.findMany({
+        where: whereClause,
+        include: {
+          product: {
+            include: {
+              agribusiness: true
+            }
+          },
+          buyer: { include: { user: true } },
+          feedback: true,
+        },
+        orderBy,
+      });
+
+      const ordersWithNumbers = orders.map(order => ({
+        ...order,
+        orderNumber: order.id
+      }));
+
+      return NextResponse.json({
+        success: true,
+        data: ordersWithNumbers
       });
     }
 
@@ -175,6 +255,18 @@ export async function GET(request: NextRequest) {
           // Seller user name (Order.seller -> Agribusiness.user.name)
           { seller: { is: { user: { is: { name: { contains: search, mode: 'insensitive' } } } } } },
         ];
+      }
+
+      // Date range filter for buyer listing
+      if (dateFrom || dateTo) {
+        const createdAt: { gte?: Date; lte?: Date } = {};
+        if (dateFrom) createdAt.gte = new Date(dateFrom);
+        if (dateTo) {
+          const to = new Date(dateTo);
+          to.setHours(23, 59, 59, 999);
+          createdAt.lte = to;
+        }
+        whereClause.createdAt = createdAt;
       }
 
       let orderBy: Prisma.OrderOrderByWithRelationInput = { createdAt: 'desc' };
@@ -253,19 +345,87 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    // Seller actions for bidding orders
+    if (action === 'accept_bid' || action === 'reject_bid') {
+      if (!existing.isBid || existing.status !== 'pending') {
+        return NextResponse.json(
+          { success: false, error: 'Bid action not allowed for this order' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Seller status update action
+    if (action === 'update_status') {
+      if (!status) {
+        return NextResponse.json(
+          { success: false, error: 'Status is required for update_status action' },
+          { status: 400 }
+        );
+      }
+      // Validate status values
+      const validStatuses = ['pending', 'confirmed', 'ready_for_pickup', 'shipped', 'delivered', 'cancelled'];
+      if (!validStatuses.includes(status)) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid status value' },
+          { status: 400 }
+        );
+      }
+    }
+
     const updateData: Partial<Prisma.OrderUpdateInput> = { updatedAt: new Date() };
     if (action === 'cancel') updateData.status = 'cancelled';
-    if (status && action !== 'cancel') updateData.status = status;
+    if (action === 'update_status' && status) updateData.status = status;
+    if (status && action !== 'cancel' && action !== 'accept_bid' && action !== 'reject_bid' && action !== 'update_status') updateData.status = status;
+    if (action === 'accept_bid') {
+      updateData.status = 'confirmed';
+      updateData.bidAcceptedAt = new Date();
+    }
+    if (action === 'reject_bid') {
+      updateData.status = 'cancelled';
+      updateData.bidRejectedAt = new Date();
+    }
 
-    const order = await prisma.order.update({
-      where: { id: orderId },
-      data: updateData,
-      include: {
-        product: { include: { agribusiness: true } },
-        buyer: true,
-        seller: true,
-        feedback: true,
+    // Use transaction to handle bid rejection with refund
+    const order = await prisma.$transaction(async (tx) => {
+      const updatedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: updateData,
+        include: {
+          product: { include: { agribusiness: true } },
+          buyer: true,
+          seller: true,
+          feedback: true,
+        }
+      });
+
+      // Handle refund for rejected bids
+      if (action === 'reject_bid' && updatedOrder.paymentStatus === 'paid') {
+        // Find the sales transaction for this order
+        const salesTransaction = await tx.salesTransaction.findFirst({
+          where: { orderId: updatedOrder.id }
+        });
+
+        if (salesTransaction && !salesTransaction.isRefunded) {
+          // Mark the transaction as refunded
+          await tx.salesTransaction.update({
+            where: { id: salesTransaction.id },
+            data: {
+              isRefunded: true,
+              refundAmount: salesTransaction.amountPaid,
+              refundReason: 'Bid rejected by seller',
+              refundedAt: new Date(),
+              // Note: stripeRefundId should be set after actual Stripe refund is processed
+            }
+          });
+
+          // TODO: Implement actual Stripe refund processing here
+          // This would involve calling stripe.refunds.create() with the payment intent
+          // and updating the stripeRefundId field with the returned refund ID
+        }
       }
+
+      return updatedOrder;
     });
 
     return NextResponse.json({
