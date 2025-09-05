@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
 
 // Interface for shipping calculation request
 interface ShippingRequest {
   distance: number;
   weight?: number;
   logisticsProvider?: string;
+  logisticsPartnerId?: string; // Optional: when provided, use partner pricing from DB
 }
 
 // Interface for shipping calculation response
 interface ShippingResponse {
   cost: number;
-  estimatedDays: string;
+  estimatedDays: string | null;
   distance: number;
-  provider: string;
+  provider: string | null;
 }
 
 // Logistics providers with unified pricing model (Distance × Weight × RM rate/kg)
@@ -29,6 +31,82 @@ function normalizeProviderName(provider?: string): string {
   if (k === 'pos-laju') return 'pos laju';
   if (k === 'jnt express' || k === 'jnt' || k === 'j&t') return 'j&t express';
   return k;
+}
+
+/**
+ * Parse pricingConfig persisted as string[] into structured tiers.
+ * Supported formats:
+ * - Flat Rate Model: ["0.05"]
+ * - Tiered by Weight: ["min-max@rate", ...] (use "+" for open ended max)
+ * - Tiered by Distance: same as above
+ */
+function parsePricingConfig(model: string | null | undefined, arr: string[] | undefined | null): {
+  flatRatePerKgKm?: number;
+  weightTiers?: { min: number; max: number | null; rate: number }[];
+  distanceTiers?: { min: number; max: number | null; rate: number }[];
+} {
+  const cfg: {
+    flatRatePerKgKm?: number;
+    weightTiers?: { min: number; max: number | null; rate: number }[];
+    distanceTiers?: { min: number; max: number | null; rate: number }[];
+  } = {};
+  if (!model || !Array.isArray(arr) || arr.length === 0) return cfg;
+  const isNumeric = (s: string) => /^\s*\d+(?:\.\d+)?\s*$/.test(s);
+
+  if (model === 'Flat Rate Model') {
+    const line = arr.find((l) => isNumeric(l)) ?? arr[0];
+    const rate = Number(line);
+    if (Number.isFinite(rate)) cfg.flatRatePerKgKm = rate;
+    return cfg;
+  }
+
+  if (model === 'Tiered Rate by Weight') {
+    const tiers: { min: number; max: number | null; rate: number }[] = [];
+    for (const raw of arr) {
+      if (!raw.includes('@')) continue;
+      const [range, rateStr] = raw.split('@');
+      const [minStr, maxStr] = (range ?? '').split('-');
+      const min = Number(minStr ?? 0);
+      const max = maxStr === '+' || maxStr === undefined || maxStr === '' ? null : Number(maxStr);
+      const rate = Number(rateStr ?? 0);
+      if (Number.isFinite(min) && Number.isFinite(rate)) tiers.push({ min, max, rate });
+    }
+    cfg.weightTiers = tiers;
+    return cfg;
+  }
+
+  if (model === 'Tiered Rate by Distance') {
+    const tiers: { min: number; max: number | null; rate: number }[] = [];
+    for (const raw of arr) {
+      if (!raw.includes('@')) continue;
+      const [range, rateStr] = raw.split('@');
+      const [minStr, maxStr] = (range ?? '').split('-');
+      const min = Number(minStr ?? 0);
+      const max = maxStr === '+' || maxStr === undefined || maxStr === '' ? null : Number(maxStr);
+      const rate = Number(rateStr ?? 0);
+      if (Number.isFinite(min) && Number.isFinite(rate)) tiers.push({ min, max, rate });
+    }
+    cfg.distanceTiers = tiers;
+    return cfg;
+  }
+
+  return cfg;
+}
+
+/**
+ * Given tiers, pick the applicable rate based on weight or distance.
+ */
+function pickTierRate(value: number, tiers: { min: number; max: number | null; rate: number }[] | undefined): number | null {
+  if (!tiers || tiers.length === 0) return null;
+  // Prefer the first tier that matches value in [min, max]
+  const match = tiers.find(t => value >= t.min && (t.max == null || value <= t.max));
+  if (match) return match.rate;
+  // If none matched, try open-ended tier (max == null)
+  const open = tiers.find(t => t.max == null);
+  if (open) return open.rate;
+  // Fallback to nearest tier by min
+  const sorted = [...tiers].sort((a,b) => a.min - b.min);
+  return sorted[sorted.length - 1].rate;
 }
 
 // Calculate shipping cost based on distance × weight × ratePerKgKm
@@ -66,6 +144,56 @@ export async function POST(request: NextRequest) {
     }
 
     const weight = body.weight && body.weight > 0 ? body.weight : 1; // Default 1kg
+
+    // Prefer dynamic partner pricing if logisticsPartnerId provided
+    if (body.logisticsPartnerId) {
+      const partner = await prisma.logisticsPartner.findUnique({
+        where: { id: body.logisticsPartnerId },
+        select: {
+          companyName: true,
+          estimatedDeliveryTime: true,
+          pricingModel: true,
+          pricingConfig: true,
+        },
+      });
+
+      if (!partner) {
+        return NextResponse.json(
+          { error: 'Logistics partner not found' },
+          { status: 404 }
+        );
+      }
+
+      const cfg = parsePricingConfig(partner.pricingModel, partner.pricingConfig);
+      let rate: number | null = null;
+
+      if (partner.pricingModel === 'Flat Rate Model') {
+        rate = cfg.flatRatePerKgKm ?? null;
+      } else if (partner.pricingModel === 'Tiered Rate by Weight') {
+        rate = pickTierRate(weight, cfg.weightTiers);
+      } else if (partner.pricingModel === 'Tiered Rate by Distance') {
+        rate = pickTierRate(body.distance, cfg.distanceTiers);
+      }
+
+      if (rate == null || !Number.isFinite(rate)) {
+        return NextResponse.json(
+          { error: 'Invalid pricing configuration for logistics partner' },
+          { status: 400 }
+        );
+      }
+
+      const totalCost = body.distance * weight * rate;
+      const response: ShippingResponse = {
+        cost: Math.round(totalCost * 100) / 100,
+        estimatedDays: partner.estimatedDeliveryTime ?? null,
+        distance: Math.round(body.distance * 100) / 100,
+        provider: partner.companyName ?? null,
+      };
+
+      return NextResponse.json(response);
+    }
+
+    // Fallback: name-based provider pricing (legacy)
     const providerKey = normalizeProviderName(body.logisticsProvider);
 
     // Validate provider

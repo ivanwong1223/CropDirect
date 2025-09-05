@@ -46,7 +46,7 @@ interface FormData {
   // Section D: Shipping Options
   shippingMethod: string;
   directShippingCost: string;
-  selectedLogistics: string;
+  logisticsPartnerId: string;
 }
 
 interface UploadedImage {
@@ -61,6 +61,16 @@ interface S3UploadedFile {
   url: string;
   key: string;
   size: number;
+}
+
+// Minimal partner shape used in the add-product selection UI
+interface LogisticsPartnerLite {
+  id: string;
+  companyName: string;
+  businessImage?: string | null;
+  estimatedDeliveryTime?: string | null;
+  pricingModel?: string | null;
+  pricingConfig?: string[];
 }
 
 export default function AddProduct() {
@@ -79,6 +89,36 @@ export default function AddProduct() {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Logistics partners state for third-party shipping
+  const [partners, setPartners] = useState<LogisticsPartnerLite[]>([]);
+  const [partnersLoading, setPartnersLoading] = useState<boolean>(false);
+  const [partnersError, setPartnersError] = useState<string>('');
+
+  /**
+   * Load logistics partners from API for third-party shipping selection
+   */
+  const loadPartners = async () => {
+    setPartnersLoading(true);
+    setPartnersError('');
+    try {
+      const res = await fetch('/api/logistics-partners');
+      if (!res.ok) throw new Error('Failed to load logistics partners');
+      const json = await res.json();
+      if (json?.success) {
+        setPartners(Array.isArray(json.data) ? json.data : []);
+      } else {
+        throw new Error(json?.error || 'Failed to load logistics partners');
+      }
+    } catch (err) {
+      setPartnersError(err as string || 'Failed to load logistics partners');
+    } finally {
+      setPartnersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPartners();
+  }, []);
 
   const [formData, setFormData] = useState<FormData>({
     productTitle: '',
@@ -99,7 +139,7 @@ export default function AddProduct() {
     productImages: [],
     shippingMethod: '',
     directShippingCost: '',
-    selectedLogistics: ''
+    logisticsPartnerId: ''
   });
 
   // Initialize Google Places Autocomplete
@@ -426,7 +466,7 @@ export default function AddProduct() {
         productImages: imageUrls,
         shippingMethod: formData.shippingMethod,
         directShippingCost: formData.directShippingCost,
-        selectedLogistics: formData.selectedLogistics
+        logisticsPartnerId: formData.logisticsPartnerId,
       };
 
       // Submit product data to API
@@ -463,7 +503,7 @@ export default function AddProduct() {
           productImages: [],
           shippingMethod: '',
           directShippingCost: '',
-          selectedLogistics: ''
+          logisticsPartnerId: ''
         });
         setUploadedImages([]);
         // Redirect to product list with success notification data
@@ -483,28 +523,7 @@ export default function AddProduct() {
   const units = ['kg', 'ton', 'sack', 'crate', 'box', 'piece'];
   const currencies = ['RM', 'USD', 'SGD'];
   
-  const logisticsProviders = [
-    { 
-      name: 'FedEx', 
-      deliveryTime: '1-3 business days', 
-      rateMethod: 'Distance × Weight × RM 0.15/kg' 
-    },
-    { 
-      name: 'DHL', 
-      deliveryTime: '1-2 business days', 
-      rateMethod: 'Distance × Weight × RM 0.18/kg' 
-    },
-    { 
-      name: 'Pos Laju', 
-      deliveryTime: '2-5 business days', 
-      rateMethod: 'Distance × Weight × RM 0.12/kg' 
-    },
-    { 
-      name: 'J&T Express', 
-      deliveryTime: '2-4 business days', 
-      rateMethod: 'Distance × Weight × RM 0.10/kg' 
-    }
-  ];
+  // Logistics partners are now loaded dynamically from /api/logistics-partners
 
   return (
     <div className="px-6 py-8 max-w-6xl mx-auto">
@@ -1053,32 +1072,131 @@ export default function AddProduct() {
                     <span className="text-sm">Shipping cost will be determined upon order confirmation from the buyer.</span>
                   </div>
                 </div>
-                
-                <RadioGroup
-                  value={formData.selectedLogistics}
-                  onValueChange={(value) => handleInputChange('selectedLogistics', value)}
-                >
-                  {logisticsProviders.map((provider) => (
-                    <div key={provider.name} className="border rounded-lg p-4">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <RadioGroupItem value={provider.name.toLowerCase()} id={provider.name.toLowerCase()} />
-                        <Label htmlFor={provider.name.toLowerCase()} className="font-medium">
-                          {provider.name}
-                        </Label>
-                      </div>
-                      <div className="ml-6 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">
-                            Delivery: {provider.deliveryTime}
-                          </Badge>
+
+                {partnersLoading && (
+                  <div className="text-sm text-gray-600">Loading logistics partners...</div>
+                )}
+
+                {!!partnersError && (
+                  <div className="flex items-center gap-3 p-3 rounded-md bg-red-50 border border-red-200">
+                    <span className="text-sm text-red-700">{partnersError}</span>
+                    <Button type="button" size="sm" variant="outline" onClick={loadPartners}>
+                      Retry
+                    </Button>
+                  </div>
+                )}
+
+                {!partnersLoading && !partnersError && partners.length === 0 && (
+                  <div className="text-sm text-gray-600">No logistics partners available. Please try again later.</div>
+                )}
+
+                {!partnersLoading && !partnersError && partners.length > 0 && (
+                  <RadioGroup
+                    value={formData.logisticsPartnerId}
+                    onValueChange={(value) => handleInputChange('logisticsPartnerId', value)}
+                  >
+                    {partners.map((provider) => (
+                      <div key={provider.id} className="border rounded-lg p-4">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <RadioGroupItem value={provider.id} id={provider.id} />
+                          <Label htmlFor={provider.id} className="font-medium">
+                            {provider.companyName}
+                          </Label>
                         </div>
-                        <p className="text-sm text-gray-600">
-                          Rate: {provider.rateMethod}
-                        </p>
+                        <div className="ml-6 space-y-1">
+                          {provider.estimatedDeliveryTime && (
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">
+                                Delivery: {provider.estimatedDeliveryTime}
+                              </Badge>
+                            </div>
+                          )}
+                          <p className="mt-3 text-sm text-gray-600">
+                            {(() => {
+                              const model = provider.pricingModel;
+                              const cfg = provider.pricingConfig;
+                              if (!model) return 'Pricing: N/A';
+                              if (model === 'flat') {
+                                const v = cfg?.[0] ? Number(cfg[0]) : undefined;
+                                return v ? `Flat rate: RM ${v}/kg·km` : 'Flat rate';
+                              }
+                              if (model === 'weightTiers') return 'Tiered by weight';
+                              if (model === 'distanceTiers') return 'Tiered by distance';
+                              return `Model: ${model}`;
+                            })()}
+                          </p>
+                          {/* Detailed Pricing Summary */}
+                          {(() => {
+                            const model = provider.pricingModel as string | undefined;
+                            const arr = (provider.pricingConfig as string[] | undefined) ?? [];
+                            if (!model || arr.length === 0) return null;
+
+                            const isNumeric = (s: string) => /^\s*\d+(?:\.\d+)?\s*$/.test(s);
+
+                            if (model === 'flat' || model === 'Flat Rate Model') {
+                              const line = arr.find((l) => l.startsWith('flat:')) ?? arr.find((l) => isNumeric(l));
+                              const rate = line ? Number(line.startsWith('flat:') ? line.split(':')[1] ?? '' : line) : undefined;
+                              return (
+                                <div className="mt-2 bg-gray-50 rounded text-xs text-gray-700">
+                                  <span className="font-medium">Pricing: </span>
+                                  {Number.isFinite(rate as number) ? `Flat rate: RM ${rate}/kg·km` : 'Flat rate'}
+                                </div>
+                              );
+                            }
+
+                            if (model === 'weightTiers' || model === 'Tiered Rate by Weight') {
+                              const tiers: { min: number; max: number | null; rate: number }[] = [];
+                              for (const raw of arr) {
+                                const l = raw.startsWith('w:') ? raw.substring(2) : raw;
+                                if (!l.includes('@')) continue;
+                                const [range, rateStr] = l.split('@');
+                                const [minStr, maxStr] = (range ?? '').split('-');
+                                const min = Number(minStr ?? 0);
+                                const max = maxStr === '+' ? null : maxStr === undefined || maxStr === '' ? null : Number(maxStr);
+                                const rate = Number(rateStr ?? 0);
+                                if (Number.isFinite(min) && Number.isFinite(rate)) tiers.push({ min, max, rate });
+                              }
+                              const text = tiers.length
+                                ? tiers.map((t) => `${t.min}-${t.max == null ? '+' : t.max}kg @ RM ${t.rate}/kg·km`).join('; ')
+                                : 'No weight tiers defined';
+                              return (
+                                <div className="mt-2 bg-gray-50 rounded text-xs text-gray-700">
+                                  <span className="font-medium">Pricing: </span>
+                                  {tiers.length ? `Weight tiers: ${text}` : text}
+                                </div>
+                              );
+                            }
+
+                            if (model === 'distanceTiers' || model === 'Tiered Rate by Distance') {
+                              const tiers: { min: number; max: number | null; rate: number }[] = [];
+                              for (const raw of arr) {
+                                const l = raw.startsWith('d:') ? raw.substring(2) : raw;
+                                if (!l.includes('@')) continue;
+                                const [range, rateStr] = l.split('@');
+                                const [minStr, maxStr] = (range ?? '').split('-');
+                                const min = Number(minStr ?? 0);
+                                const max = maxStr === '+' ? null : maxStr === undefined || maxStr === '' ? null : Number(maxStr);
+                                const rate = Number(rateStr ?? 0);
+                                if (Number.isFinite(min) && Number.isFinite(rate)) tiers.push({ min, max, rate });
+                              }
+                              const text = tiers.length
+                                ? tiers.map((t) => `${t.min}-${t.max == null ? '+' : t.max}km @ RM ${t.rate}/kg·km`).join('; ')
+                                : 'No distance tiers defined';
+                              return (
+                                <div className="mt-2 bg-gray-50 rounded text-xs text-gray-700">
+                                  <span className="font-medium">Pricing: </span>
+                                  {tiers.length ? `Distance tiers: ${text}` : text}
+                                </div>
+                              );
+                            }
+
+                            return null;
+                          })()}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </RadioGroup>
+                    ))}
+                  </RadioGroup>
+                )}
               </div>
             )}
           </CardContent>

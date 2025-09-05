@@ -3,7 +3,9 @@ import { PrismaClient } from '@/app/generated/prisma';
 
 const prisma = new PrismaClient();
 
-// GET - Fetch a specific product by ID
+/**
+ * GET - Fetch a specific product by ID with logistics partner information
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

@@ -128,25 +128,22 @@ const menuData: MenuSection[] = [
     userRole: 'logistics',
     items: [
       {
-        id: 'delivery-requests',
-        name: 'Delivery Requests',
-        route: '/logistics/requests',
-        badge: '5' // Example notification badge
+        id: 'dashboard',
+        name: 'Dashboard',
+        route: '/logistics/dashboard',
+        icon: 'LayoutDashboard'
       },
       {
         id: 'active-deliveries',
         name: 'Active Deliveries',
         route: '/logistics/active',
+        icon: 'TruckElectric'
       },
       {
         id: 'delivery-history',
         name: 'Delivery History',
         route: '/logistics/history',
-      },
-      {
-        id: 'logistics-profile',
-        name: 'Profile',
-        route: '/logistics/profile',
+        icon: 'History'
       }
     ]
   }
@@ -167,12 +164,13 @@ export const useMenuStore = create<MenuStore>((set, get) => ({
   
   getMenuItemByRoute: (route: string) => {
     // Special case handling for profile-related routes
-    if (route === '/seller/my-profile' || route === '/seller/change-password') {
+    if (route === '/seller/my-profile' || route === '/seller/change-password' || route === '/logistics/my-profile') {
       // Return a virtual menu item for profile pages
+      const baseRoute = route.startsWith('/logistics') ? '/logistics/my-profile' : '/seller/my-profile';
       return {
         id: 'profile',
         name: 'My Profile',
-        route: '/seller/my-profile',
+        route: baseRoute,
         icon: 'User'
       };
     }

@@ -1,28 +1,47 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import SellerSidebar from '@/components/custom/SellerSidebar';
+import { usePathname } from 'next/navigation';
 
-/**
- * Layout component specifically for logistics routes
- * Provides consistent sidebar navigation across all logistics pages
- */
 export default function LogisticsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const pathname = usePathname();
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const isKybForm = pathname === '/seller/kyb-form';
+
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       {/* Sidebar Navigation */}
-      <SellerSidebar />
+      {!isKybForm && (
+          <SellerSidebar 
+            sidebarOpen={sidebarOpen} 
+            toggleSidebar={toggleSidebar} 
+          />
+        )}
       
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
-        <main className="flex-1 overflow-auto">
-          {children}
+      <main 
+          className={`flex-1 flex flex-col transition-all duration-300 ${
+            sidebarOpen && !isKybForm ? 'ml-[16.5rem]' : 'ml-0'
+          }`}
+        >
+          {/* Top Navbar - Only show if not on KYB form */}
+          {!isKybForm}
+          
+          {/* Page Content */}
+          <div className="flex-1">
+            {children}
+          </div>
         </main>
-      </div>
     </div>
   );
 }

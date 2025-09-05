@@ -28,6 +28,7 @@ interface Product {
   selectedLogistics?: string;
   shippingMethod?: string;
   directShippingCost?: number;
+  logisticsPartnerId?: string;
   agribusiness: {
     id: string;
     businessName: string;
@@ -80,6 +81,7 @@ export default function CheckoutPage() {
   const [buyerProfileId, setBuyerProfileId] = useState<string | null>(null);
   // Notifications state
   const [notifications, setNotifications] = useState<React.ReactNode[]>([]);
+  const [logisticsPartner, setLogisticsPartner] = useState<{ id: string; companyName: string; businessImage?: string | null; estimatedDeliveryTime?: string | null; pricingModel?: string | null; pricingConfig?: string[] | null } | null>(null);
 
   // Add notification function
   const addNotification = (message: string, type: 'success' | 'error') => {
@@ -292,6 +294,31 @@ export default function CheckoutPage() {
     fetchUserCompanyAddress();
   }, []);
 
+  // Fetch logistics partner details when product is loaded
+  useEffect(() => {
+    const fetchPartner = async (partnerId: string) => {
+      try {
+        const res = await fetch(`/api/logistics-partners?id=${encodeURIComponent(partnerId)}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (json.success && json.data) {
+          setLogisticsPartner(json.data);
+        } else {
+          setLogisticsPartner(null);
+        }
+      } catch (e) {
+        console.error('Error fetching logistics partner:', e);
+        setLogisticsPartner(null);
+      }
+    };
+
+    if (product && product.shippingMethod !== 'direct' && product.logisticsPartnerId) {
+      fetchPartner(product.logisticsPartnerId);
+    } else {
+      setLogisticsPartner(null);
+    }
+  }, [product]);
+
   // Calculate distance between product location and delivery address using Google Maps Distance Matrix API
   const calculateDistance = async (origin: string, destination: string): Promise<number | null> => {
     return new Promise((resolve) => {
@@ -350,7 +377,8 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           distance: distance,
           weight: quantity,
-          logisticsProvider: product.selectedLogistics
+          logisticsProvider: product.selectedLogistics,
+          logisticsPartnerId: product.logisticsPartnerId || undefined
         })
       });
 
@@ -465,8 +493,8 @@ export default function CheckoutPage() {
             deliveryAddress,
           },
           shippingCalculation: {
-            provider: product.selectedLogistics || null,
-            deliveryTime: (product.selectedLogistics ? (product.selectedLogistics.toLowerCase() === 'fedex' ? '1-3 business days' : product.selectedLogistics.toLowerCase() === 'dhl' ? '1-2 business days' : product.selectedLogistics.toLowerCase() === 'pos laju' ? '2-5 business days' : product.selectedLogistics.toLowerCase() === 'j&t express' ? '2-4 business days' : null) : null),
+            provider: logisticsPartner?.companyName || product.selectedLogistics || null,
+            deliveryTime: logisticsPartner?.estimatedDeliveryTime || (product.selectedLogistics ? (product.selectedLogistics.toLowerCase() === 'fedex' ? '1-3 business days' : product.selectedLogistics.toLowerCase() === 'dhl' ? '1-2 business days' : product.selectedLogistics.toLowerCase() === 'pos laju' ? '2-5 business days' : product.selectedLogistics.toLowerCase() === 'j&t express' ? '2-4 business days' : null) : null),
             distance: shippingDistance,
           },
           // IMPORTANT: use BusinessBuyer.id for buyer relation
@@ -532,6 +560,23 @@ export default function CheckoutPage() {
 
   const selectedLogistics = product.selectedLogistics?.toLowerCase() || '';
   const logisticsInfo = logisticsDetails[selectedLogistics];
+
+  // Helper to summarize partner pricing for display
+  const summarizePricing = (pricingModel?: string | null, pricingConfig?: string[] | null) => {
+    if (!pricingModel) return null;
+    const model = pricingModel.toLowerCase();
+    if (model === 'flat rate model' || model === 'flat rate') {
+      const rate = pricingConfig?.[0] || '';
+      return rate ? `Flat rate: RM ${rate}/kg/km` : 'Flat rate';
+    }
+    if (model === 'tiered rate by weight' || model === 'tiered by weight') {
+      return 'Tiered by weight';
+    }
+    if (model === 'tiered rate by distance' || model === 'tiered by distance') {
+      return 'Tiered by distance';
+    }
+    return null;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 relative">
@@ -635,16 +680,31 @@ export default function CheckoutPage() {
                     <div className="flex items-center gap-2">
                       <Truck className="h-4 w-4" />
                       <span className="font-medium">Shipping Method:</span>
+                      {product.shippingMethod !== 'direct' && logisticsPartner?.businessImage && (
+                        <span className="relative w-5 h-5 rounded-full overflow-hidden">
+                          <Image src={logisticsPartner.businessImage} alt={logisticsPartner.companyName || 'Logistics Provider'} fill className="object-cover" />
+                        </span>
+                      )}
                       <span className="capitalize">
                         {product.shippingMethod === 'direct' ? 'Direct Shipping' :
-                          product.selectedLogistics ? 
+                          (logisticsPartner?.companyName || (product.selectedLogistics ? 
                             product.selectedLogistics.split(' ').map(word => 
                               word.charAt(0).toUpperCase() + word.slice(1)
-                            ).join(' ') : 'Standard'
+                            ).join(' ') : 'Standard'))
                         }
                       </span>
                     </div>
-                    {logisticsInfo && product.shippingMethod !== 'direct' && (
+                    {product.shippingMethod !== 'direct' && logisticsPartner && (
+                      <div className="text-sm text-gray-600 ml-6">
+                        {logisticsPartner.estimatedDeliveryTime && (
+                          <p>Estimated Delivery Time: {logisticsPartner.estimatedDeliveryTime}</p>
+                        )}
+                        {summarizePricing(logisticsPartner.pricingModel, logisticsPartner.pricingConfig) && (
+                          <p className='mt-2'>Rate Method: {summarizePricing(logisticsPartner.pricingModel, logisticsPartner.pricingConfig)}</p>
+                        )}
+                      </div>
+                    )}
+                    {!logisticsPartner && logisticsInfo && product.shippingMethod !== 'direct' && (
                       <div className="text-sm text-gray-600 ml-6">
                         <p>Delivery Time: {logisticsInfo.deliveryTime}</p>
                         <p>Rate Method: {logisticsInfo.rateMethod}</p>

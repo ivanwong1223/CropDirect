@@ -87,6 +87,8 @@ model KYBForm {
   id                    String             @id @default(uuid())
   agribusinessId        String             @unique
   agribusiness          Agribusiness       @relation(fields: [agribusinessId], references: [id], onDelete: Cascade)
+  logisticsId           String             @unique
+  logisticsPartner      LogisticsPartner   @relation(fields: [logisticsId], references: [id], onDelete: Cascade)
   
   // KYB-specific fields
   businessRegistrationNumber String?
@@ -130,12 +132,20 @@ model LogisticsPartner {
   userId             String             @unique
   user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   companyName        String
-  companyAddress     String
+  companyAddress     String?
+  businessImage      String?
+  contactNo          String?
   serviceAreas       String[]           @default([])
   transportModes     String[]           @default([])
+  estimatedDeliveryTime String?
+  pricingModel       String?
+  pricingConfig      String[]           @default([])
+
+  kybStatus          KYBStatus          @default(NOT_SUBMITTED)
   isKybVerified      Boolean            @default(false)
-  registrationNumber String?
-  insuranceInfo      String?
+  kybForm            KYBForm?
+
+  products           Product[]
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 }
@@ -192,8 +202,10 @@ model Product {
   
   // Section D: Shipping Options
   shippingMethod        String?
+  logisticsPartnerId    String?
+  logisticsPartner      LogisticsPartner? @relation(fields: [logisticsPartnerId], references: [id], onDelete: SetNull)
   directShippingCost    Decimal?      @db.Decimal(10, 2)
-  selectedLogistics     String?
+  // selectedLogistics     String?
   
   // Product status and metadata
   status                ProductStatus @default(ACTIVE)

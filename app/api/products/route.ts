@@ -203,7 +203,10 @@ export async function POST(request: NextRequest) {
       productImages,
       shippingMethod,
       directShippingCost,
-      selectedLogistics
+      // Backward-compat field; may be provided by older clients
+      selectedLogistics,
+      // New field to associate a logistics partner
+      logisticsPartnerId,
     } = body;
 
     // Validate required fields
@@ -280,6 +283,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Resolve logistics partner ID if only name (selectedLogistics) is provided
+    let resolvedLogisticsPartnerId: string | null = null;
+    if (logisticsPartnerId) {
+      resolvedLogisticsPartnerId = logisticsPartnerId;
+    } else if (selectedLogistics) {
+      const partnerByName = await prisma.logisticsPartner.findFirst({
+        where: {
+          companyName: {
+            equals: String(selectedLogistics),
+            mode: 'insensitive',
+          },
+        },
+        select: { id: true },
+      });
+      resolvedLogisticsPartnerId = partnerByName?.id || null;
+    }
+
     // Create the product
     const product = await prisma.product.create({
       data: {
@@ -303,7 +323,8 @@ export async function POST(request: NextRequest) {
         productImages: productImages || [],
         shippingMethod,
         directShippingCost: directShippingCost ? parseFloat(directShippingCost) : null,
-        selectedLogistics,
+        // Store relation to logistics partner when using third-party shipping
+        logisticsPartnerId: resolvedLogisticsPartnerId,
         status: 'ACTIVE'
       },
       include: {
@@ -313,6 +334,10 @@ export async function POST(request: NextRequest) {
             state: true,
             country: true,
           }
+        },
+        // Include partner for client-side display if needed
+        logisticsPartner: {
+          select: { id: true, companyName: true }
         }
       }
     });

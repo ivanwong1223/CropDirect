@@ -53,7 +53,7 @@ interface EditFormData {
   productImages: (File | string)[];
   shippingMethod: string;
   directShippingCost: string;
-  selectedLogistics: string;
+  logisticsPartnerId: string;
 }
 
 // Original product interface for API response
@@ -76,7 +76,7 @@ interface ProductDetail {
   location: string;
   productImages: string[];
   shippingMethod?: string | null;
-  selectedLogistics?: string | null;
+  logisticsPartnerId?: string | null;
   directShippingCost?: string | null;
   agribusiness?: {
     businessName: string;
@@ -106,7 +106,17 @@ export default function EditProductPage() {
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
   
-  // Form state
+  // Minimal partner shape used in the edit-product selection UI
+  interface LogisticsPartnerLite {
+    id: string;
+    companyName: string;
+    businessImage?: string | null;
+    estimatedDeliveryTime?: string | null;
+    pricingModel?: string | null;
+    pricingConfig?: string[];
+  }
+
+  // State management
   const [formData, setFormData] = useState<EditFormData>({
     productTitle: '',
     cropCategory: '',
@@ -126,14 +136,39 @@ export default function EditProductPage() {
     productImages: [],
     shippingMethod: '',
     directShippingCost: '',
-    selectedLogistics: ''
+    logisticsPartnerId: ''
   });
+
+  // Logistics partners state for third-party shipping
+  const [partners, setPartners] = useState<LogisticsPartnerLite[]>([]);
+  const [partnersLoading, setPartnersLoading] = useState<boolean>(false);
+  const [partnersError, setPartnersError] = useState<string>('');
 
   // Constants for form options
   const cropCategories = ['Grains', 'Fruits', 'Specialty Coffee', 'Vegetables', 'Legumes', 'Herbs & Spices', 'Nuts & Seeds', 'Rice', 'Livestock', 'Wheat', 'Corn', 'Barley', 'Oats', 'Soybean', 'Cotton', 'Fabric', 'Cloth', 'Leather', 'Metal', 'Plastic', 'Glass', 'Wood', 'Paper', 'Cardboard'];
   const units = ['kg', 'ton', 'sack', 'crate', 'box', 'piece'];
   const currencies = ['RM', 'USD', 'EUR', 'SGD'];
-  const logisticsOptions = ['pos-laju', 'j&t', 'citylink', 'gdex', 'dhl'];
+  /**
+   * Load logistics partners from API for third-party shipping selection
+   */
+  const loadPartners = async () => {
+    setPartnersLoading(true);
+    setPartnersError('');
+    try {
+      const res = await fetch('/api/logistics-partners');
+      if (!res.ok) throw new Error('Failed to load logistics partners');
+      const json = await res.json();
+      if (json?.success) {
+        setPartners(Array.isArray(json.data) ? json.data : []);
+      } else {
+        throw new Error(json?.error || 'Failed to load logistics partners');
+      }
+    } catch (err) {
+      setPartnersError(err as string || 'Failed to load logistics partners');
+    } finally {
+      setPartnersLoading(false);
+    }
+  };
 
   /**
    * Fetch product data from API
@@ -162,6 +197,13 @@ export default function EditProductPage() {
     };
     fetchProduct();
   }, [id]);
+
+  /**
+   * Load logistics partners on component mount
+   */
+  useEffect(() => {
+    loadPartners();
+  }, []);
 
   /**
    * Initialize Google Places Autocomplete
@@ -221,7 +263,7 @@ export default function EditProductPage() {
       productImages: productData.productImages || [],
       shippingMethod: productData.shippingMethod || '',
       directShippingCost: productData.directShippingCost || '',
-      selectedLogistics: productData.selectedLogistics || ''
+      logisticsPartnerId: productData.logisticsPartnerId || ''
     });
   };
 
@@ -308,7 +350,7 @@ export default function EditProductPage() {
         productImages: imageData,
         shippingMethod: formData.shippingMethod,
         directShippingCost: formData.directShippingCost,
-        selectedLogistics: formData.selectedLogistics
+        logisticsPartnerId: formData.logisticsPartnerId
       };
 
       const resp = await fetch(`/api/products/${id}`, {
@@ -1034,22 +1076,124 @@ export default function EditProductPage() {
 
                   {formData.shippingMethod === 'third-party' && isEditing && (
                     <div className="space-y-3">
-                      <Label htmlFor="selectedLogistics">Logistics Partner</Label>
-                      <Select
-                        value={formData.selectedLogistics}
-                        onValueChange={(value) => handleInputChange('selectedLogistics', value)}
-                      >
-                        <SelectTrigger className="bg-white border-gray-300">
-                          <SelectValue placeholder="Select logistics partner" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {logisticsOptions.map((option) => (
-                            <SelectItem key={option} value={option}>
-                              {option.toUpperCase()}
-                            </SelectItem>
+                      <Label>Logistics Partner</Label>
+                      {partnersLoading ? (
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-4 w-3/4" />
+                        </div>
+                      ) : partnersError ? (
+                        <div className="text-red-600 text-sm">{partnersError}</div>
+                      ) : (
+                        <RadioGroup
+                          value={formData.logisticsPartnerId}
+                          onValueChange={(value) => handleInputChange('logisticsPartnerId', value)}
+                          className="space-y-3"
+                        >
+                          {partners.map((provider) => (
+                            <div key={provider.id} className="border rounded-lg p-3 hover:bg-gray-50">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <RadioGroupItem value={provider.id} id={provider.id} />
+                                <Label htmlFor={provider.id} className="font-medium">
+                                  {provider.companyName}
+                                </Label>
+                              </div>
+                              <div className="ml-6 space-y-1">
+                                {provider.estimatedDeliveryTime && (
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-xs">
+                                      Delivery: {provider.estimatedDeliveryTime}
+                                    </Badge>
+                                  </div>
+                                )}
+                                <p className="mt-3 text-sm text-gray-600">
+                                  {(() => {
+                                    const model = provider.pricingModel;
+                                    const cfg = provider.pricingConfig;
+                                    if (!model) return 'Pricing: N/A';
+                                    if (model === 'flat') {
+                                      const v = cfg?.[0] ? Number(cfg[0]) : undefined;
+                                      return v ? `Flat rate: RM ${v}/kg·km` : 'Flat rate';
+                                    }
+                                    if (model === 'weightTiers') return 'Tiered by weight';
+                                    if (model === 'distanceTiers') return 'Tiered by distance';
+                                    return `Model: ${model}`;
+                                  })()
+                                }
+                                </p>
+                                {/* Detailed Pricing Summary */}
+                                {(() => {
+                                  const model = provider.pricingModel as string | undefined;
+                                  const arr = (provider.pricingConfig as string[] | undefined) ?? [];
+                                  if (!model || arr.length === 0) return null;
+
+                                  const isNumeric = (s: string) => /^\s*\d+(?:\.\d+)?\s*$/.test(s);
+
+                                  if (model === 'flat' || model === 'Flat Rate Model') {
+                                    const line = arr.find((l) => l.startsWith('flat:')) ?? arr.find((l) => isNumeric(l));
+                                    const rate = line ? Number(line.startsWith('flat:') ? line.split(':')[1] ?? '' : line) : undefined;
+                                    return (
+                                      <div className="mt-2 bg-gray-50 rounded text-xs text-gray-700">
+                                        <span className="font-medium">Pricing: </span>
+                                        {Number.isFinite(rate as number) ? `Flat rate: RM ${rate}/kg·km` : 'Flat rate'}
+                                      </div>
+                                    );
+                                  }
+
+                                  if (model === 'weightTiers' || model === 'Tiered Rate by Weight') {
+                                    const tiers: { min: number; max: number | null; rate: number }[] = [];
+                                    for (const raw of arr) {
+                                      const l = raw.startsWith('w:') ? raw.substring(2) : raw;
+                                      if (!l.includes('@')) continue;
+                                      const [range, rateStr] = l.split('@');
+                                      const [minStr, maxStr] = (range ?? '').split('-');
+                                      const min = Number(minStr ?? 0);
+                                      const max = maxStr === '+' ? null : maxStr === undefined || maxStr === '' ? null : Number(maxStr);
+                                      const rate = Number(rateStr ?? 0);
+                                      if (Number.isFinite(min) && Number.isFinite(rate)) tiers.push({ min, max, rate });
+                                    }
+                                    const text = tiers.length
+                                      ? tiers.map((t) => `${t.min}-${t.max == null ? '+' : t.max}kg @ RM ${t.rate}/kg·km`).join('; ')
+                                      : 'No weight tiers defined';
+                                    return (
+                                      <div className="mt-2 bg-gray-50 rounded text-xs text-gray-700">
+                                        <span className="font-medium">Pricing: </span>
+                                        {tiers.length ? `Weight tiers: ${text}` : text}
+                                      </div>
+                                    );
+                                  }
+
+                                  if (model === 'distanceTiers' || model === 'Tiered Rate by Distance') {
+                                    const tiers: { min: number; max: number | null; rate: number }[] = [];
+                                    for (const raw of arr) {
+                                      const l = raw.startsWith('d:') ? raw.substring(2) : raw;
+                                      if (!l.includes('@')) continue;
+                                      const [range, rateStr] = l.split('@');
+                                      const [minStr, maxStr] = (range ?? '').split('-');
+                                      const min = Number(minStr ?? 0);
+                                      const max = maxStr === '+' ? null : maxStr === undefined || maxStr === '' ? null : Number(maxStr);
+                                      const rate = Number(rateStr ?? 0);
+                                      if (Number.isFinite(min) && Number.isFinite(rate)) tiers.push({ min, max, rate });
+                                    }
+                                    const text = tiers.length
+                                      ? tiers.map((t) => `${t.min}-${t.max == null ? '+' : t.max}km @ RM ${t.rate}/kg·km`).join('; ')
+                                      : 'No distance tiers defined';
+                                    return (
+                                      <div className="mt-2 bg-gray-50 rounded text-xs text-gray-700">
+                                        <span className="font-medium">Pricing: </span>
+                                        {tiers.length ? `Distance tiers: ${text}` : text}
+                                      </div>
+                                    );
+                                  }
+
+                                  return null;
+                                })()
+                                }
+                              </div>
+                            </div>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </RadioGroup>
+                      )}
                     </div>
                   )}
 
@@ -1059,7 +1203,7 @@ export default function EditProductPage() {
                       <ShoppingBasket className="h-4 w-4 text-purple-600" />
                       <span>
                         Shipping: {product.shippingMethod === 'third-party' ? (
-                          <>third-party{product.selectedLogistics ? ` (${product.selectedLogistics.toUpperCase()})` : ""}</>
+                          <>third-party{product.logisticsPartnerId ? ` (${partners.find(p => p.id === product.logisticsPartnerId)?.companyName || 'Unknown Partner'})` : ""}</>
                         ) : (
                           <>
                             {product.shippingMethod}

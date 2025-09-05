@@ -17,6 +17,8 @@ import {
   TrendingUp, 
   MessageSquare, 
   Receipt,
+  TruckElectric,
+  History,
   User
 } from 'lucide-react';
 import { getUserData } from '@/lib/localStorage';
@@ -99,7 +101,12 @@ export default function SellerSidebar({
 
   // Handle settings and logout navigation
   const handleSettingsClick = () => {
-    router.push('/seller/my-profile');
+    // Route to the appropriate profile page based on current pathname
+    if (pathname.includes('/logistics')) {
+      router.push('/logistics/my-profile');
+    } else {
+      router.push('/seller/my-profile');
+    }
     setActiveMenuItem('');
   };
 
@@ -134,6 +141,10 @@ export default function SellerSidebar({
         return <Receipt {...iconProps} />;
       case 'ShoppingBag':
         return <ShoppingBag {...iconProps} />;
+      case 'TruckElectric':
+        return <TruckElectric {...iconProps} />;
+      case 'History':
+        return <History {...iconProps} />;
       default:
         return null;
     }

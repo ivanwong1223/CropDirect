@@ -8,6 +8,7 @@ import { CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
 interface KYBStatusCardProps {
   kybStatus: string;
   isKybVerified: boolean;
+  formPath?: string;
 }
 
 const fadeIn = {
@@ -65,8 +66,9 @@ const getKYBStatusInfo = (status: string, isVerified: boolean) => {
   }
 };
 
-export default function KYBStatusCard({ kybStatus, isKybVerified }: KYBStatusCardProps) {
+export default function KYBStatusCard({ kybStatus, isKybVerified, formPath }: KYBStatusCardProps) {
   const statusInfo = getKYBStatusInfo(kybStatus, isKybVerified);
+  const targetPath = "/seller/kyb-form";
 
   return (
     <motion.div variants={fadeIn} initial="hidden" animate="visible">
@@ -93,7 +95,7 @@ export default function KYBStatusCard({ kybStatus, isKybVerified }: KYBStatusCar
               variant={kybStatus === 'PENDING' || kybStatus === 'APPROVED' ? "link" : "default"}
               onClick={() => {
                 // Navigate to KYB form
-                window.location.href = '/seller/kyb-form';
+                window.location.href = targetPath;
               }}
             >
               {kybStatus === 'NOT_SUBMITTED' 
