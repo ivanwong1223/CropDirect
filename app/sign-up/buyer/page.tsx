@@ -1,9 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Typography, IconButton } from "@material-tailwind/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +16,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
+import { FcGoogle } from 'react-icons/fc'
 import { ArrowLeft, Eye, EyeOff, Mail, Lock, Building, User2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircleIcon, CheckCircle2Icon } from "lucide-react";
+import { useSession, signIn } from "next-auth/react";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -27,6 +29,8 @@ const fadeIn = {
 
 export default function BuyerSignUpPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data: session } = useSession();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -41,6 +45,8 @@ export default function BuyerSignUpPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -63,47 +69,65 @@ export default function BuyerSignUpPage() {
     return true;
   };
 
+  const handleGoogleConnect = async () => {
+    try {
+      setGoogleLoading(true);
+      setError("");
+      await signIn("google", { redirect: false, callbackUrl: "/sign-up/buyer?oauth=1" });
+    } catch (e) {
+      setError("Failed to connect to Google. Please try again.");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const cameFromGoogle = searchParams?.get('oauth') === '1';
+    const user = session?.user as { email?: string; requiresOnboarding?: boolean } | undefined;
+    const needsOnboarding = Boolean(user?.requiresOnboarding);
+
+    if (cameFromGoogle) {
+      if (needsOnboarding) {
+        setIsGoogleConnected(true);
+        if (user?.email) {
+          setFormData(prev => ({ ...prev, email: user.email }));
+        }
+        router.replace('/sign-up/buyer');
+      } else if (user) {
+        setError('This Google account is already registered. Please sign in.');
+        router.replace('/sign-in');
+      }
+    }
+  }, [session?.user, searchParams, router]);
+
+  // Handle buyer sign-up submit. If connected with Google, omit password fields.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
     setSuccess("");
 
-    // Validate passwords match
-    if (!validatePasswords()) {
-      setIsLoading(false);
-      return;
-    }
-
-    // Validate company type selection
-    if (!formData.companyType) {
-      setError("Please select a company type");
-      setIsLoading(false);
-      return;
-    }
-
-    // Validate custom company type if "Other" is selected
-    if (formData.companyType === "Other" && !formData.customCompanyType.trim()) {
-      setError("Please specify your company type");
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      const { confirmPassword, customCompanyType, ...submitData } = formData;
-      
-      // Use customCompanyType if "Other" is selected, otherwise use the selected companyType
-      const finalCompanyType = formData.companyType === "Other" ? customCompanyType : formData.companyType;
-      
+      if (!isGoogleConnected) {
+        // Validate passwords match for manual sign-up
+        if (formData.password !== formData.confirmPassword) {
+          setError("Passwords do not match");
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      const submitBody = isGoogleConnected
+        ? (() => { const { password, confirmPassword, ...rest } = formData; return { ...rest, oauthOnboarding: true }; })()
+        : formData;
+
       const response = await fetch("/api/createUser/buyer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...submitData, companyType: finalCompanyType }),
+        body: JSON.stringify(submitBody),
       });
-      const data = await response.json();
-      console.log("This is the data: ", data);
-      console.log("The formdata submitted is: ", formData);
 
+      const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || "Failed to create account");
       }
@@ -200,6 +224,16 @@ export default function BuyerSignUpPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Google Connect */}
+            {/* <div className="space-y-2">
+              <Button type="button" onClick={handleGoogleConnect} disabled={googleLoading} className="w-full h-12 bg-white text-black border hover:bg-black hover:text-white">
+                {googleLoading ? 'Connecting to Google…' : 'Sign in with Google'}
+              </Button>
+              {isGoogleConnected && (
+                <p className="text-sm text-green-700">Google connected. You can edit your email below. Password not required.</p>
+              )}
+            </div> */}
+
             {/* Contact Name */}
             <div className="space-y-2">
               <Label htmlFor="name" className="flex items-center gap-2">
@@ -230,6 +264,8 @@ export default function BuyerSignUpPage() {
                 onChange={handleChange} 
                 required 
                 className="pl-4" 
+                value={formData.email}
+                disabled={isGoogleConnected}
               />
             </div>
 
@@ -285,6 +321,7 @@ export default function BuyerSignUpPage() {
             </div>
 
             {/* Password */}
+            {!isGoogleConnected && (
             <div className="space-y-2">
               <Label htmlFor="password" className="flex items-center gap-2">
                 <Lock className="text-gray-400 h-5 w-5" />
@@ -309,8 +346,10 @@ export default function BuyerSignUpPage() {
                 </button>
               </div>
             </div>
+            )}
 
             {/* Confirm Password */}
+            {!isGoogleConnected && (
             <div className="space-y-2 mb-10">
               <Label htmlFor="confirmPassword" className="flex items-center gap-2">
                 <Lock className="text-gray-400 h-5 w-5" />
@@ -335,6 +374,7 @@ export default function BuyerSignUpPage() {
                 </button>
               </div>
             </div>
+            )}
 
             <Button type="submit" disabled={isLoading} className="w-full h-12 bg-black hover:bg-white hover:text-black hover:border hover:border-black hover:cursor-pointer font-medium rounded-lg transition-colors duration-300 disabled:opacity-50 cursor-pointer">
               {isLoading ? (
@@ -345,6 +385,26 @@ export default function BuyerSignUpPage() {
               ) : (
                 "Create Account"
               )}
+            </Button>
+
+            <div className="relative flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative px-4 text-sm text-gray-500 bg-white">
+                Or
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              onClick={handleGoogleConnect}
+              disabled={googleLoading}
+              variant="outline"
+              className="cursor-pointer w-full h-12 border-gray-300 bg-white text-gray-800 hover:bg-gray-100 flex items-center justify-center gap-3 rounded-lg disabled:opacity-70"
+            >
+              <FcGoogle className="h-5 w-5" />
+              {googleLoading ? 'Connecting to Google…' : 'Continue with Google'}
             </Button>
           </form>
 

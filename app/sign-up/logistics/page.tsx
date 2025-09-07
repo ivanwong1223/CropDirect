@@ -1,9 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Typography, IconButton } from "@material-tailwind/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import Image from "next/image";
 import { ArrowLeft, Eye, EyeOff, Mail, Lock, Building, User2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircleIcon, CheckCircle2Icon } from "lucide-react";
+import { useSession, signIn } from "next-auth/react";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -20,6 +21,8 @@ const fadeIn = {
 
 export default function BuyerSignUpPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data: session } = useSession();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -30,6 +33,8 @@ export default function BuyerSignUpPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -37,6 +42,41 @@ export default function BuyerSignUpPage() {
     if (error) setError("");
   };
 
+  const handleGoogleConnect = async () => {
+    try {
+      setGoogleLoading(true);
+      setError("");
+      await signIn("google", { redirect: false, callbackUrl: "/sign-up/logistics?oauth=1" });
+    } catch (e) {
+      setError("Failed to connect to Google. Please try again.");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const cameFromGoogle = searchParams?.get('oauth') === '1';
+    const user = session?.user as { email?: string; requiresOnboarding?: boolean } | undefined;
+    const needsOnboarding = Boolean(user?.requiresOnboarding);
+
+    if (cameFromGoogle) {
+      if (needsOnboarding) {
+        setIsGoogleConnected(true);
+        if (user?.email) {
+          setFormData(prev => ({ ...prev, email: user.email }));
+        }
+        router.replace('/sign-up/logistics');
+      } else if (user) {
+        setError('This Google account is already registered. Please sign in.');
+        router.replace('/sign-in');
+      }
+    }
+  }, [session?.user, searchParams, router]);
+
+  const togglePasswordVisibility = () => setShowPassword((p) => !p);
+
+  // Handle form submission to create logistics partner account.
+  // If Google is connected, omit the password field from the payload.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -49,7 +89,14 @@ export default function BuyerSignUpPage() {
       const response = await fetch("/api/createUser/logistic", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...submitData }),
+        body: JSON.stringify(
+          isGoogleConnected
+            ? (() => {
+                const { password, ...rest } = submitData as typeof formData;
+                return { ...rest, oauthOnboarding: true };
+              })()
+            : { ...submitData }
+        ),
       });
       const data = await response.json();
       console.log("This is the data: ", data);
@@ -62,14 +109,12 @@ export default function BuyerSignUpPage() {
       setSuccess("Account created successfully! Redirecting to sign in...");
       setTimeout(() => router.push("/sign-in"), 2000);
     } catch (err) {
-      console.error("Buyer registration error:", err);
+      console.error("Logistics registration error:", err);
       setError(err instanceof Error ? err.message : "Failed to create account. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
-
-  const togglePasswordVisibility = () => setShowPassword((p) => !p);
 
   return (
     <div className="min-h-screen bg-[#F5F1E9] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -150,6 +195,16 @@ export default function BuyerSignUpPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Google Connect */}
+            <div className="space-y-2">
+              <Button type="button" onClick={handleGoogleConnect} disabled={googleLoading} className="w-full h-12 bg-white text-black border hover:bg-black hover:text-white">
+                {googleLoading ? 'Connecting to Google…' : 'Sign in with Google'}
+              </Button>
+              {isGoogleConnected && (
+                <p className="text-sm text-green-700">Google connected. You can edit your email below. Password not required.</p>
+              )}
+            </div>
+
             {/* Contact Name */}
             <div className="space-y-2">
               <Label htmlFor="name" className="flex items-center gap-2">
@@ -180,6 +235,8 @@ export default function BuyerSignUpPage() {
                 onChange={handleChange} 
                 required 
                 className="pl-4" 
+                value={formData.email}
+                disabled={isGoogleConnected}
               />
             </div>
 
@@ -200,6 +257,7 @@ export default function BuyerSignUpPage() {
             </div>
 
             {/* Password */}
+            {!isGoogleConnected && (
             <div className="space-y-2">
               <Label htmlFor="password" className="flex items-center gap-2">
                 <Lock className="text-gray-400 h-5 w-5" />
@@ -224,6 +282,7 @@ export default function BuyerSignUpPage() {
                 </button>
               </div>
             </div>
+            )}
 
             <Button type="submit" disabled={isLoading} className="w-full h-12 bg-black hover:bg-white hover:text-black hover:border hover:border-black hover:cursor-pointer font-medium rounded-lg transition-colors duration-300 disabled:opacity-50 cursor-pointer">
               {isLoading ? (

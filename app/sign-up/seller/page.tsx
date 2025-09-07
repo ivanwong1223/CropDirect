@@ -1,9 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Typography,
   IconButton,
@@ -15,6 +15,7 @@ import Image from "next/image";
 import { ArrowLeft, Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircleIcon, CheckCircle2Icon, PopcornIcon } from "lucide-react"
+import { useSession, signIn } from "next-auth/react";
 
 // Animation variants for fade-in effect
 const fadeIn = {
@@ -28,6 +29,8 @@ import { getCountries, getStatesByCountry } from "@/lib/countries";
 
 export default function SellerSignUpPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data: session } = useSession();
   const [formData, setFormData] = useState({
     businessName: "",
     tradingType: "",
@@ -44,6 +47,8 @@ export default function SellerSignUpPage() {
   const [availableStates, setAvailableStates] = useState<Array<{code: string, name: string}>>([]);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
 
   // Get countries data
   const countries = getCountries();
@@ -90,6 +95,47 @@ export default function SellerSignUpPage() {
     if (error) setError("");
   };
 
+  /**
+   * Initiates Google OAuth sign-in flow without redirecting.
+   * On success, NextAuth updates the session. We then detect the oauth return
+   * via search params and set the Google-connected state accordingly.
+   */
+  const handleGoogleConnect = async () => {
+    try {
+      setGoogleLoading(true);
+      setError("");
+      await signIn("google", { redirect: false, callbackUrl: "/sign-up/seller?oauth=1" });
+    } catch (e) {
+      setError("Failed to connect to Google. Please try again.");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  /**
+   * When returning from Google OAuth, if the user is not in DB (requiresOnboarding),
+   * we treat it as a new sign-up via Google: prefill email and hide password field.
+   * If the Google account already exists, redirect them to sign-in.
+   */
+  useEffect(() => {
+    const cameFromGoogle = searchParams?.get('oauth') === '1';
+    const user = session?.user as { email?: string; requiresOnboarding?: boolean } | undefined;
+    const needsOnboarding = Boolean(user?.requiresOnboarding);
+
+    if (cameFromGoogle) {
+      if (needsOnboarding) {
+        setIsGoogleConnected(true);
+        if (user?.email) {
+          setFormData(prev => ({ ...prev, email: user.email }));
+        }
+        router.replace('/sign-up/seller');
+      } else if (user) {
+        setError('This Google account is already registered. Please sign in.');
+        router.replace('/sign-in');
+      }
+    }
+  }, [session?.user, searchParams, router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -102,7 +148,7 @@ export default function SellerSignUpPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(isGoogleConnected ? (() => { const { password, ...rest } = formData; return { ...rest, oauthOnboarding: true }; })() : formData),
       });
 
       const data = await response.json();
@@ -239,6 +285,16 @@ export default function SellerSignUpPage() {
 
           {/* Registration Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Google Connect */}
+            <div className="space-y-2">
+              <Button type="button" onClick={handleGoogleConnect} disabled={googleLoading} className="w-full h-12 bg-white text-black border hover:bg-black hover:text-white">
+                {googleLoading ? 'Connecting to Google…' : 'Sign in with Google'}
+              </Button>
+              {isGoogleConnected && (
+                <p className="text-sm text-green-700">Google connected. You can edit your email below. Password not required.</p>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Business Name */}
               <div className="space-y-2">
@@ -345,11 +401,12 @@ export default function SellerSignUpPage() {
             <div className="space-y-2 mt-6">
               <Label htmlFor="email"><Mail className="text-gray-400 h-5 w-5" />Email Address<span className='text-red-500'>*</span></Label>
               <div className="relative">
-                <Input id="email" name="email" type="email" placeholder="your.email@company.com" onChange={handleChange} required className="pl-4" />
+                <Input id="email" name="email" type="email" placeholder="your.email@company.com" onChange={handleChange} required className="pl-4" value={formData.email} disabled={isGoogleConnected} />
               </div>
             </div>
 
             {/* Password */}
+            {!isGoogleConnected && (
             <div className="space-y-2">
               <Label htmlFor="password"><Lock className="text-gray-400 h-5 w-5" />Password<span className='text-red-500'>*</span></Label>
               <div className="relative">
@@ -359,6 +416,7 @@ export default function SellerSignUpPage() {
                 </button>
               </div>
             </div>
+            )}
 
             {/* Terms and Conditions */}
             <div className="flex items-center space-x-2 mt-12">

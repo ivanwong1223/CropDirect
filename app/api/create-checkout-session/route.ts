@@ -30,6 +30,8 @@ export async function POST(request: NextRequest) {
       bidUnitPrice,
       // Order notes
       notes,
+      // Logistics partner
+      logisticsPartnerId,
     } = body;
 
     // Validate required fields for payment-first flow
@@ -125,6 +127,7 @@ export async function POST(request: NextRequest) {
         // shipping
         estimatedDeliveryTime: shippingCalculation?.deliveryTime || '',
         shippingDistance: shippingCalculation?.distance !== undefined && shippingCalculation?.distance !== null ? String(shippingCalculation.distance) : '',
+        logisticsPartnerId: logisticsPartnerId ? String(logisticsPartnerId) : '',
         // bid metadata
         isBid: isBid ? 'true' : 'false',
         bidUnitPrice: bidUnitPrice !== undefined && bidUnitPrice !== null ? String(bidUnitPrice) : '',
@@ -317,6 +320,9 @@ export async function GET(request: NextRequest) {
 
             // Order notes
             notes: md.notes as string || null,
+            
+            // Logistics partner
+            logisticsPartnerId: md.logisticsPartnerId as string || null,
           },
           include: {
             product: {

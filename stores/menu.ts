@@ -135,16 +135,16 @@ const menuData: MenuSection[] = [
       },
       {
         id: 'active-deliveries',
-        name: 'Active Deliveries',
-        route: '/logistics/active',
+        name: 'Order Deliveries',
+        route: '/logistics/delivery/list-page',
         icon: 'TruckElectric'
       },
-      {
-        id: 'delivery-history',
-        name: 'Delivery History',
-        route: '/logistics/history',
-        icon: 'History'
-      }
+      // {
+      //   id: 'delivery-history',
+      //   name: 'Delivery History',
+      //   route: '/logistics/history',
+      //   icon: 'History'
+      // }
     ]
   }
 ];

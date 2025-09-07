@@ -17,14 +17,17 @@ export async function POST(request: NextRequest) {
       contactName,
       email,
       password,
-      agreeTerms
+      agreeTerms,
+      oauthOnboarding // flag to indicate Google OAuth onboarding flow
     } = body;
 
     // Validate required fields
     if (!businessName || !tradingType || !primaryCrop || !country || !state || 
-        !contactName || !email || !password || !agreeTerms) {
+        !contactName || !email || (!oauthOnboarding && !password) || !agreeTerms) {
       return NextResponse.json(
-        { error: "All fields are required and terms must be accepted" },
+        { error: !oauthOnboarding 
+            ? "All fields are required and terms must be accepted"
+            : "All fields except password are required and terms must be accepted" },
         { status: 400 }
       );
     }
@@ -34,6 +37,14 @@ export async function POST(request: NextRequest) {
     if (!emailRegex.test(email)) {
       return NextResponse.json(
         { error: "Invalid email format" },
+        { status: 400 }
+      );
+    }
+
+    // Validate password strength only if a password is provided
+    if (password && password.length < 6) {
+      return NextResponse.json(
+        { error: "Password must be at least 6 characters long" },
         { status: 400 }
       );
     }
@@ -50,9 +61,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password
+    // Hash password only if provided
     const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = password ? await bcrypt.hash(password, saltRounds) : undefined;
 
     // Define default profile images
     const defaultImages = [
@@ -72,7 +83,7 @@ export async function POST(request: NextRequest) {
           email,
           name: contactName,
           role: "AGRIBUSINESS",
-          password: hashedPassword,
+          ...(hashedPassword ? { password: hashedPassword } : {}),
           isActive: true
         }
       });

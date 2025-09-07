@@ -24,7 +24,6 @@ export async function GET(request: NextRequest) {
         contactNo: true,
         businessImage: true,
         loyaltyPoints: true,
-        preferredPaymentMethods: true,
         user: {
           select: {
             id: true,

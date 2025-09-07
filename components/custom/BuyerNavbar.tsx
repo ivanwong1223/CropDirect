@@ -12,6 +12,8 @@ import { useMenuStore } from '@/stores/menu';
 import { getUserData } from '@/lib/localStorage';
 import { mockCategories } from '@/lib/mockData';
 import { cn } from '@/lib/utils';
+import { signOut } from 'next-auth/react'
+import { clearStoreData } from '@/lib/localStorage'
 
 // A simple item used inside the mega menu columns
 function MenuItem({ title, desc }: { title: string; desc: string }) {
@@ -240,7 +242,6 @@ export default function BuyerNavbar() {
               })()
             )}
 
-            {/* Profile Dropdown styled like SellerNavbar */}
             {rightLinks.find((it) => it.id === 'buyer-profile') && (
               <DropdownMenu>
                 <DropdownMenuTrigger className="group flex items-center space-x-3 p-2 rounded-md hover:bg-yellow-400 transition-colors">
@@ -280,11 +281,16 @@ export default function BuyerNavbar() {
                       Profile
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/sign-in" className="flex items-center">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Log out
-                    </Link>
+                  <DropdownMenuItem onClick={async () => {
+                    try {
+                      clearStoreData()
+                      await signOut({ callbackUrl: '/sign-in' })
+                    } catch (e) {
+                      console.error('Error during sign out', e)
+                    }
+                  }} className="flex items-center cursor-pointer">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

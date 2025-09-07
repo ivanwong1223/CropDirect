@@ -22,6 +22,8 @@ import {
   User
 } from 'lucide-react';
 import { getUserData } from '@/lib/localStorage';
+import { signOut } from 'next-auth/react'
+import { clearStoreData } from '@/lib/localStorage'
 
 interface SellerSidebarProps {
   sidebarOpen?: boolean;
@@ -110,10 +112,14 @@ export default function SellerSidebar({
     setActiveMenuItem('');
   };
 
-  const handleLogout = () => {
-    // Add logout logic here
-    console.log('Logout clicked');
-    router.push('/sign-in');
+  const handleLogout = async () => {
+    // Properly clear NextAuth session and local storage, then redirect to sign-in
+    try {
+      clearStoreData()
+      await signOut({ callbackUrl: '/sign-in' })
+    } catch (e) {
+      console.error('Error during sign out', e)
+    }
   };
 
   /**

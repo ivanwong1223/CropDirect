@@ -26,6 +26,8 @@ import {
 } from '@/components/ui/breadcrumb';
 import { cn } from '@/lib/utils';
 import { getUserData } from '@/lib/localStorage';
+import { signOut } from 'next-auth/react'
+import { clearStoreData } from '@/lib/localStorage'
 
 interface SellerNavbarProps {
   className?: string;
@@ -305,11 +307,16 @@ export default function SellerNavbar({ className }: SellerNavbarProps) {
                   Profile
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/sign-in" className="flex items-center">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Log out
-                </Link>
+              <DropdownMenuItem onClick={async () => {
+                try {
+                  clearStoreData()
+                  await signOut({ callbackUrl: '/sign-in' })
+                } catch (e) {
+                  console.error('Error during sign out', e)
+                }
+              }} className="flex items-center cursor-pointer">
+                <LogOut className="mr-2 h-4 w-4" />
+                Log out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

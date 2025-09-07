@@ -14,18 +14,21 @@ export async function POST(request: NextRequest) {
       companyAddress, // optional
       contactNo,      // optional (future use)
       businessImage,  // optional (future use)
+      oauthOnboarding // optional flag from UI to indicate Google OAuth onboarding
     } = body;
 
-    // Validate required fields
-    if (!name || !email || !password || !companyName) {
+    // Validate required fields (password required only when not onboarding via OAuth)
+    if (!name || !email || !companyName || (!oauthOnboarding && !password)) {
       return NextResponse.json(
-        { error: "Name, Email, Password and Company Name are required" },
+        { error: !oauthOnboarding
+            ? "Name, Email, Password and Company Name are required"
+            : "Name, Email and Company Name are required" },
         { status: 400 }
       );
     }
 
-    // Validate password strength (minimum 6 characters)
-    if (password.length < 6) {
+    // Validate password strength (only if password is provided)
+    if (password && password.length < 6) {
       return NextResponse.json(
         { error: "Password must be at least 6 characters long" },
         { status: 400 }
@@ -50,9 +53,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password
+    // Hash password only if provided
     const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = password ? await bcrypt.hash(password, saltRounds) : undefined;
 
     // Define default profile images (fallbacks)
     const defaultImages = [
@@ -69,7 +72,7 @@ export async function POST(request: NextRequest) {
           email,
           name,
           role: "LOGISTICS_PARTNER",
-          password: hashedPassword,
+          ...(hashedPassword ? { password: hashedPassword } : {}),
           isActive: true,
         },
       });

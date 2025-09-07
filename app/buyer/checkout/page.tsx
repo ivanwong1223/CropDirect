@@ -504,6 +504,8 @@ export default function CheckoutPage() {
           bidUnitPrice: isBid && bidUnitPrice !== null ? bidUnitPrice : undefined,
           // Order notes
           notes: notes.trim() || null,
+          // Logistics partner
+          logisticsPartnerId: logisticsPartner?.id || null,
         })
       });
 

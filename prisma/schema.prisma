@@ -117,7 +117,6 @@ model BusinessBuyer {
   contactNo               String?
   businessImage           String?
   loyaltyPoints           Int                @default(0)
-  preferredPaymentMethods String[]           @default([])
   // Relationship to orders
   orders                  Order[]
   chatRooms               ChatRoom[]
@@ -146,6 +145,7 @@ model LogisticsPartner {
   kybForm            KYBForm?
 
   products           Product[]
+  orders             Order[]            // Orders assigned to this logistics partner
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 }
@@ -233,6 +233,10 @@ model Order {
   productId        String
   product          Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
   
+  // Logistics Partner relationship
+  logisticsPartnerId String?
+  logisticsPartner   LogisticsPartner? @relation(fields: [logisticsPartnerId], references: [id], onDelete: SetNull)
+  
   // Order details
   quantity         Int
   unitPrice        Decimal        @db.Decimal(10, 2)
@@ -274,6 +278,7 @@ model Order {
   @@index([buyerId])
   @@index([sellerId])
   @@index([productId])
+  @@index([logisticsPartnerId])
   @@index([status])
 }
 
