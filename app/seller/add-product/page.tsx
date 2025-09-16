@@ -18,7 +18,6 @@ import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getUserData } from '@/lib/localStorage';
 
-
 interface FormData {
   // Section A: Product Information
   productTitle: string;
@@ -277,42 +276,33 @@ export default function AddProduct() {
    */
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    
     if (files.length + uploadedImages.length > 3) {
       alert('You can only upload up to 3 images');
       return;
     }
-
     setIsUploading(true);
-    
     try {
       // Create initial uploaded image objects
       const newImages: UploadedImage[] = files.map(file => ({
         file,
         uploading: true
       }));
-      
       setUploadedImages(prev => [...prev, ...newImages]);
-      
       // Upload files to S3
       const formData = new FormData();
       files.forEach(file => {
         formData.append('files', file);
       });
-      
       const response = await fetch('/api/upload/s3', {
         method: 'POST',
         body: formData
       });
-      
       const result = await response.json();
-      
       if (result.success) {
         // Update uploaded images with S3 URLs
         setUploadedImages(prev => {
           const updated = [...prev];
           const startIndex = updated.length - files.length;
-          
           result.data.files.forEach((uploadedFile: S3UploadedFile, index: number) => {
             if (updated[startIndex + index]) {
               updated[startIndex + index] = {
@@ -322,10 +312,8 @@ export default function AddProduct() {
               };
             }
           });
-          
           return updated;
         });
-        
         console.log('Images uploaded successfully:', result.data.files);
       } else {
         // Handle upload error
@@ -340,20 +328,16 @@ export default function AddProduct() {
               error: result.error || 'Upload failed'
             };
           }
-          
           return updated;
         });
-        
         alert(`Upload failed: ${result.error}`);
       }
     } catch (error) {
       console.error('Error uploading images:', error);
-      
       // Update images with error state
       setUploadedImages(prev => {
         const updated = [...prev];
         const startIndex = updated.length - files.length;
-        
         for (let i = startIndex; i < updated.length; i++) {
           updated[i] = {
             ...updated[i],
@@ -361,10 +345,8 @@ export default function AddProduct() {
             error: 'Upload failed'
           };
         }
-        
         return updated;
       });
-      
       alert('Failed to upload images. Please try again.');
     } finally {
       setIsUploading(false);

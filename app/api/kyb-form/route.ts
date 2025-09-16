@@ -163,8 +163,8 @@ export async function GET(request: NextRequest) {
         taxId: agribusiness.kybForm.taxId,
         businessLicense: agribusiness.kybForm.businessLicense,
         submittedAt: agribusiness.kybForm.submittedAt,
-        reviewedAt: agribusiness.kybForm.reviewedAt,
-        rejectionReason: agribusiness.kybForm.rejectionReason,
+        // reviewedAt: agribusiness.kybForm.reviewedAt,
+        // rejectionReason: agribusiness.kybForm.rejectionReason,
       } : null,
     });
   } catch (error) {

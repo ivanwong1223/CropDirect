@@ -390,14 +390,14 @@ export default function LoginPage() {
                 </label>
               </div>
 
-              <div className="absolute right-0 mt-2 text-sm">
+              {/* <div className="absolute right-0 mt-2 text-sm">
                 <Link
                   href="/forgot-password"
                   className="font-medium text-black hover:underline"
                 >
                   Forgot your password?
                 </Link>
-              </div>
+              </div> */}
             </div>
 
             <Button

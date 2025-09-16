@@ -92,8 +92,8 @@ export default function SellerDashboard() {
             <Button 
               className="border-2 border-white text-white hover:bg-white hover:text-black px-6 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center gap-2 cursor-pointer"
               onClick={() => {
-                // Add navigation logic for generating report
-                console.log('Generate Report clicked');
+                // Navigate to Seller Sales Report page
+                router.push('/seller/dashboard/report');
               }}
             >
               <FileText className="w-5 h-5" />

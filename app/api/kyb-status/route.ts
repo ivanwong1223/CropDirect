@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
             taxId: true,
             businessLicense: true,
             submittedAt: true,
-            reviewedAt: true,
-            rejectionReason: true,
+            // reviewedAt: true,
+            // rejectionReason: true,
           }
         },
       },

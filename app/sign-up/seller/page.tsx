@@ -16,6 +16,7 @@ import { ArrowLeft, Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircleIcon, CheckCircle2Icon, PopcornIcon } from "lucide-react"
 import { useSession, signIn } from "next-auth/react";
+import { FcGoogle } from 'react-icons/fc'
 
 // Animation variants for fade-in effect
 const fadeIn = {
@@ -286,14 +287,14 @@ export default function SellerSignUpPage() {
           {/* Registration Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Google Connect */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Button type="button" onClick={handleGoogleConnect} disabled={googleLoading} className="w-full h-12 bg-white text-black border hover:bg-black hover:text-white">
                 {googleLoading ? 'Connecting to Google…' : 'Sign in with Google'}
               </Button>
               {isGoogleConnected && (
                 <p className="text-sm text-green-700">Google connected. You can edit your email below. Password not required.</p>
               )}
-            </div>
+            </div> */}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Business Name */}
@@ -435,6 +436,26 @@ export default function SellerSignUpPage() {
               ) : (
                 "Create Account"
               )}
+            </Button>
+
+            <div className="relative flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative px-4 text-sm text-gray-500 bg-white">
+                Or
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              onClick={handleGoogleConnect}
+              disabled={googleLoading}
+              variant="outline"
+              className="cursor-pointer w-full h-12 border-gray-300 bg-white text-gray-800 hover:bg-gray-100 flex items-center justify-center gap-3 rounded-lg disabled:opacity-70"
+            >
+              <FcGoogle className="h-5 w-5" />
+              {googleLoading ? 'Connecting to Google…' : 'Sign up with Google'}
             </Button>
           </form>
 

@@ -87,8 +87,8 @@ model KYBForm {
   id                    String             @id @default(uuid())
   agribusinessId        String             @unique
   agribusiness          Agribusiness       @relation(fields: [agribusinessId], references: [id], onDelete: Cascade)
-  logisticsId           String             @unique
-  logisticsPartner      LogisticsPartner   @relation(fields: [logisticsId], references: [id], onDelete: Cascade)
+  logisticsId           String?            @unique
+  logisticsPartner      LogisticsPartner?  @relation(fields: [logisticsId], references: [id], onDelete: Cascade)
   
   // KYB-specific fields
   businessRegistrationNumber String?
@@ -98,9 +98,9 @@ model KYBForm {
   
   // KYB Review fields
   submittedAt           DateTime?
-  reviewedAt            DateTime?
-  reviewedBy            String?           // Admin user ID
-  rejectionReason       String?
+  // reviewedAt            DateTime?
+  // reviewedBy            String?           // Admin user ID
+  // rejectionReason       String?
   
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt

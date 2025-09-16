@@ -404,7 +404,7 @@ export default function BuyerSignUpPage() {
               className="cursor-pointer w-full h-12 border-gray-300 bg-white text-gray-800 hover:bg-gray-100 flex items-center justify-center gap-3 rounded-lg disabled:opacity-70"
             >
               <FcGoogle className="h-5 w-5" />
-              {googleLoading ? 'Connecting to Google…' : 'Continue with Google'}
+              {googleLoading ? 'Connecting to Google…' : 'Sign up with Google'}
             </Button>
           </form>
 
