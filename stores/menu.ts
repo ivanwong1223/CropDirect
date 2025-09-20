@@ -117,7 +117,7 @@ const menuData: MenuSection[] = [
       {
         id: 'buyer-profile',
         name: 'Profile',
-        route: '/buyer/profile',
+        route: '/buyer/my-profile',
         icon: 'User'
       }
     ]

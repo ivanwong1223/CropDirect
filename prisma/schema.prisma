@@ -61,6 +61,14 @@ model Agribusiness {
   facebookUrl       String?
   instagramUrl      String?
   websiteUrl        String?
+
+  // Payout Bank Account (optional but required before listing products)
+  bankAccountHolderName String?
+  bankName               String?
+  bankAccountNumber      String?
+  bankSwiftCode          String?
+  bankRoutingNumber      String?
+  
   // Relationship to KYB form
   kybForm            KYBForm?
   // Relationship to products
@@ -121,6 +129,8 @@ model BusinessBuyer {
   orders                  Order[]
   chatRooms               ChatRoom[]
   feedback                Feedback[]
+  // Loyalty history relation
+  loyaltyHistory          LoyaltyPointHistory[]
   createdAt               DateTime           @default(now())
   updatedAt               DateTime           @updatedAt
 }
@@ -274,6 +284,7 @@ model Order {
   feedback         Feedback?
   // Relationship
   transactions     SalesTransaction[]
+  loyaltyPointHistory LoyaltyPointHistory[]
 
   @@index([buyerId])
   @@index([sellerId])
@@ -362,6 +373,31 @@ model SalesTransaction {
   @@index([orderId])
   @@index([paidAt])
   @@index([isRefunded])
+}
+
+// Loyalty program enums and models
+enum LoyaltyEventType {
+  EARN
+  REDEEM
+  ADJUST
+  REFUND_REVERSAL
+}
+
+model LoyaltyPointHistory {
+  id          String            @id @default(uuid())
+  buyerId     String
+  buyer       BusinessBuyer     @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  orderId     String?
+  order       Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  type        LoyaltyEventType
+  points      Int               // positive for EARN/REFUND_REVERSAL, positive for REDEEM represents points used
+  amount      Decimal?          @db.Decimal(12, 2) // RM value represented by this event
+  description String?
+  createdAt   DateTime          @default(now())
+
+  @@index([buyerId])
+  @@index([orderId])
+  @@index([createdAt])
 }
 
 // Subscription model for managing subscription plans

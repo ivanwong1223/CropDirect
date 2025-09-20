@@ -17,13 +17,9 @@ import {
   TrendingUp, 
   MessageSquare, 
   Receipt,
-  TruckElectric,
-  History,
   User
 } from 'lucide-react';
 import { getUserData } from '@/lib/localStorage';
-import { signOut } from 'next-auth/react'
-import { clearStoreData } from '@/lib/localStorage'
 
 interface SellerSidebarProps {
   sidebarOpen?: boolean;
@@ -103,23 +99,14 @@ export default function SellerSidebar({
 
   // Handle settings and logout navigation
   const handleSettingsClick = () => {
-    // Route to the appropriate profile page based on current pathname
-    if (pathname.includes('/logistics')) {
-      router.push('/logistics/my-profile');
-    } else {
-      router.push('/seller/my-profile');
-    }
+    router.push('/seller/my-profile');
     setActiveMenuItem('');
   };
 
-  const handleLogout = async () => {
-    // Properly clear NextAuth session and local storage, then redirect to sign-in
-    try {
-      clearStoreData()
-      await signOut({ callbackUrl: '/sign-in' })
-    } catch (e) {
-      console.error('Error during sign out', e)
-    }
+  const handleLogout = () => {
+    // Add logout logic here
+    console.log('Logout clicked');
+    router.push('/sign-in');
   };
 
   /**
@@ -147,10 +134,6 @@ export default function SellerSidebar({
         return <Receipt {...iconProps} />;
       case 'ShoppingBag':
         return <ShoppingBag {...iconProps} />;
-      case 'TruckElectric':
-        return <TruckElectric {...iconProps} />;
-      case 'History':
-        return <History {...iconProps} />;
       default:
         return null;
     }

@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { PrismaClient } from '@/app/generated/prisma';
+import { PrismaClient, Prisma } from '@/app/generated/prisma';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const prisma = new PrismaClient();
+
+type LoyaltySummary = {
+  redeemedPoints: number;
+  discountRM: number;
+  pointsEarned: number;
+  finalAmountRM: number;
+  balanceAfter: number | null;
+};
 
 /**
  * POST /api/create-checkout-session
@@ -32,6 +40,8 @@ export async function POST(request: NextRequest) {
       notes,
       // Logistics partner
       logisticsPartnerId,
+      // Loyalty
+      redeemPoints,
     } = body;
 
     // Validate required fields for payment-first flow
@@ -60,6 +70,10 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    // Loyalty constants
+    const POINT_VALUE_RM = 0.01; // 1 point = RM0.01
+    const EARN_POINTS_PER_RM = 1; // earn 1 point per RM1 spent (net)
 
     // Compute absolute success and cancel URLs using request origin to ensure explicit scheme exists
     const origin = new URL(request.url).origin;
@@ -91,6 +105,27 @@ export async function POST(request: NextRequest) {
     // Normalize Stripe currency string (map RM -> myr)
     const stripeCurrency = (currency || '').toLowerCase() === 'rm' ? 'myr' : (currency || '').toLowerCase();
 
+    // Calculate loyalty redemption based on buyer balance and total
+    let redeemedPointsUsed = 0;
+    let loyaltyDiscountRM = 0;
+    let adjustedTotalAmount = Number(totalAmount) || 0;
+    let pointsEarnedEstimate = 0;
+
+    if (buyerId && typeof redeemPoints === 'number' && redeemPoints > 0) {
+      const buyerProfile = await prisma.businessBuyer.findUnique({
+        where: { id: String(buyerId) },
+        select: { loyaltyPoints: true }
+      });
+
+      const currentBalance = buyerProfile?.loyaltyPoints ?? 0;
+      const maxByTotal = Math.floor((Number(totalAmount) || 0) / POINT_VALUE_RM);
+      redeemedPointsUsed = Math.max(0, Math.min(redeemPoints, currentBalance, maxByTotal));
+      loyaltyDiscountRM = redeemedPointsUsed * POINT_VALUE_RM;
+      adjustedTotalAmount = Math.max(0, (Number(totalAmount) || 0) - loyaltyDiscountRM);
+    }
+
+    pointsEarnedEstimate = Math.floor(adjustedTotalAmount * EARN_POINTS_PER_RM);
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -102,7 +137,7 @@ export async function POST(request: NextRequest) {
               description: `${quantity} units from ${product.agribusiness.businessName}`,
               images: imageUrl ? [imageUrl] : undefined,
             },
-            unit_amount: Math.round(Number(totalAmount) * 100), // total in cents
+            unit_amount: Math.round(Number(adjustedTotalAmount) * 100), // total in cents after loyalty redemption
           },
           quantity: 1,
         },
@@ -120,7 +155,7 @@ export async function POST(request: NextRequest) {
         unitPrice: unitPrice !== undefined ? String(unitPrice) : String(product.pricing || 0),
         subtotal: subtotal !== undefined ? String(subtotal) : String((Number(product.pricing || 0) * Number(quantity)).toFixed(2)),
         shippingCost: shippingCost !== undefined ? String(shippingCost) : '0',
-        totalAmount: String(totalAmount),
+        totalAmount: String(adjustedTotalAmount), // store adjusted (payable) total
         currency: String(currency),
         // buyer info
         deliveryAddress: buyerInfo.deliveryAddress || '',
@@ -133,6 +168,10 @@ export async function POST(request: NextRequest) {
         bidUnitPrice: bidUnitPrice !== undefined && bidUnitPrice !== null ? String(bidUnitPrice) : '',
         // order notes
         notes: notes || '',
+        // loyalty metadata
+        redeemPointsUsed: String(redeemedPointsUsed),
+        loyaltyDiscountRM: String(loyaltyDiscountRM.toFixed(2)),
+        pointsEarnedEstimate: String(pointsEarnedEstimate),
       },
       customer_email: buyerInfo.email || undefined,
       // Collect only billing address on Stripe; shipping is handled in-app and sent via metadata
@@ -158,7 +197,7 @@ export async function POST(request: NextRequest) {
     // Type guard for Stripe error
     if (error && typeof error === 'object' && 'type' in error && 'message' in error) {
       return NextResponse.json(
-        { success: false, error: `Stripe error: ${String((error).message)}` },
+        { success: false, error: `Stripe error: ${error instanceof Error ? error.message : 'Unknown error'}` },
         { status: 400 }
       );
     }
@@ -209,6 +248,28 @@ export async function GET(request: NextRequest) {
     });
 
     if (existingOrder) {
+      // Compose loyalty summary from history if exists
+      let loyaltySummary: LoyaltySummary | null = null;
+      try {
+        const [history, buyer] = await Promise.all([
+          prisma.loyaltyPointHistory.findMany({
+            where: { orderId: existingOrder.id },
+          }),
+          prisma.businessBuyer.findUnique({ where: { id: existingOrder.buyerId }, select: { loyaltyPoints: true } })
+        ]);
+        const redeemed = history.filter(h => h.type === 'REDEEM').reduce((sum, h) => sum + Math.abs(h.points), 0);
+        const earned = history.filter(h => h.type === 'EARN').reduce((sum, h) => sum + h.points, 0);
+        const discountRM = history.filter(h => h.type === 'REDEEM').reduce((sum, h) => sum + Number(h.amount || 0), 0);
+        const finalPaidRM = Number(session.amount_total || 0) / 100;
+        loyaltySummary = {
+          redeemedPoints: redeemed,
+          discountRM: Number(discountRM.toFixed(2)),
+          pointsEarned: earned,
+          finalAmountRM: Number(finalPaidRM.toFixed(2)),
+          balanceAfter: buyer?.loyaltyPoints ?? null,
+        };
+      } catch {}
+
       return NextResponse.json({
         success: true,
         data: {
@@ -221,7 +282,8 @@ export async function GET(request: NextRequest) {
           order: {
              ...existingOrder,
              orderNumber: existingOrder.id
-           }
+           },
+          loyalty: loyaltySummary,
         }
       });
     }
@@ -282,6 +344,11 @@ export async function GET(request: NextRequest) {
           { status: 400 }
         );
       }
+
+      // Loyalty metadata from session
+      const redeemedPointsUsed = parseNum(md.redeemPointsUsed as string | undefined) ?? 0;
+      const loyaltyDiscountRM = parseNum(md.loyaltyDiscountRM as string | undefined) ?? 0;
+      const pointsEarnedEstimate = parseNum(md.pointsEarnedEstimate as string | undefined) ?? 0;
 
       // Use transaction to ensure atomicity: create order, update inventory, and create sales transaction
       const result = await prisma.$transaction(async (tx) => {
@@ -374,12 +441,67 @@ export async function GET(request: NextRequest) {
             where: { id: tempTransaction.id },
             data: { id: formattedTransactionId }
           });
+
+          // Loyalty updates (redeem and earn)
+          if (md.buyerId) {
+            const buyerId = md.buyerId as string;
+            const deltaPoints = (pointsEarnedEstimate || 0) - (redeemedPointsUsed || 0);
+            if (deltaPoints !== 0) {
+              await tx.businessBuyer.update({
+                where: { id: buyerId },
+                data: { loyaltyPoints: { increment: deltaPoints } }
+              });
+            }
+            // Insert ledger entries
+            if ((redeemedPointsUsed || 0) > 0) {
+              await tx.loyaltyPointHistory.create({
+                data: {
+                  buyerId,
+                  orderId: createdOrder.id,
+                  type: 'REDEEM',
+                  points: -Math.abs(redeemedPointsUsed || 0),
+                  amount: loyaltyDiscountRM ? new Prisma.Decimal(loyaltyDiscountRM) : new Prisma.Decimal(0),
+                  description: 'Points redeemed at checkout',
+                }
+              });
+            }
+            if ((pointsEarnedEstimate || 0) > 0) {
+              await tx.loyaltyPointHistory.create({
+                data: {
+                  buyerId,
+                  orderId: createdOrder.id,
+                  type: 'EARN',
+                  points: Math.abs(pointsEarnedEstimate || 0),
+                  amount: new Prisma.Decimal(orderTotalAmount),
+                  description: 'Points earned from purchase',
+                }
+              });
+            }
+          }
         }
 
         return createdOrder;
       });
 
       const createdOrder = result;
+
+      // Loyalty summary for response
+      let loyaltySummary: LoyaltySummary | null = null;
+      try {
+        const md = session.metadata!;
+        const buyerId = md.buyerId as string | undefined;
+        const redeemedPointsUsed = parseFloat(md.redeemPointsUsed || '0') || 0;
+        const loyaltyDiscountRM = parseFloat(md.loyaltyDiscountRM || '0') || 0;
+        const pointsEarnedEstimate = parseFloat(md.pointsEarnedEstimate || '0') || 0;
+        const buyer = buyerId ? await prisma.businessBuyer.findUnique({ where: { id: buyerId }, select: { loyaltyPoints: true } }) : null;
+        loyaltySummary = {
+          redeemedPoints: redeemedPointsUsed,
+          discountRM: Number(loyaltyDiscountRM.toFixed(2)),
+          pointsEarned: pointsEarnedEstimate,
+          finalAmountRM: Number(((session.amount_total || 0) / 100).toFixed(2)),
+          balanceAfter: buyer?.loyaltyPoints ?? null,
+        };
+      } catch {}
 
       return NextResponse.json({
         success: true,
@@ -393,7 +515,8 @@ export async function GET(request: NextRequest) {
           order: {
             ...createdOrder,
             orderNumber: createdOrder.id
-          }
+          },
+          loyalty: loyaltySummary,
         }
       });
     } catch (orderError) {
@@ -410,7 +533,7 @@ export async function GET(request: NextRequest) {
     // Type guard for Stripe error
     if (error && typeof error === 'object' && 'type' in error && 'message' in error) {
       return NextResponse.json(
-        { success: false, error: `Stripe error: ${String((error).message)}` },
+        { success: false, error: `Stripe error: ${error instanceof Error ? error.message : 'Unknown error'}` },
         { status: 400 }
       );
     }

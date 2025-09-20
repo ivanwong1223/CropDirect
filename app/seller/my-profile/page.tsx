@@ -37,6 +37,12 @@ import {
   SquarePlus,
   History
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { getCountries, getStatesByCountry } from "@/lib/countries";
 import { getUserData } from "@/lib/localStorage";
 import ProfilePictureSection from "@/components/custom/ProfilePictureSection";
@@ -64,6 +70,12 @@ interface UserProfile {
   facebookUrl?: string;
   instagramUrl?: string;
   websiteUrl?: string;
+  // Payout Bank Account (optional)
+  bankAccountHolderName?: string | null;
+  bankName?: string | null;
+  bankAccountNumber?: string | null;
+  bankSwiftCode?: string | null;
+  bankRoutingNumber?: string | null;
   user: {
     id: string;
     name: string;
@@ -111,7 +123,13 @@ export default function Profile() {
     facebookUrl: "",
     instagramUrl: "",
     websiteUrl: "",
-    contactNo: ""
+    contactNo: "",
+    // Payout Bank Account fields
+    bankAccountHolderName: "",
+    bankName: "",
+    bankAccountNumber: "",
+    bankSwiftCode: "",
+    bankRoutingNumber: "",
   });
 
   // Monitor formData changes
@@ -133,34 +151,22 @@ export default function Profile() {
     const kybSuccess = searchParams.get('kybSuccess');
     if (kybSuccess === 'true') {
       setNotifications((prev) => {
-        // Check if notification already exists to prevent duplicates
         const existingNotification = prev.find(n => 
           n && typeof n === 'object' && 'key' in n && 
-          typeof n.key === 'string' && n.key.startsWith('kyb-success-')
+          typeof (n as any).key === 'string' && (n as any).key.startsWith('kyb-success-')
         );
-        
-        if (existingNotification) {
-          return prev; // Don't add duplicate
-        }
-        
+        if (existingNotification) return prev;
         return [
           <div 
             key={`kyb-success-${Date.now()}`} 
             className="flex items-start gap-3 rounded-md border bg-white p-3 shadow-sm opacity-100 transition-opacity duration-300"
             onAnimationEnd={() => {
-              setTimeout(() => {
-                setNotifications(prev => prev.slice(1));
-              }, 5000);
+              setTimeout(() => { setNotifications(prev => prev.slice(1)); }, 5000);
             }}
-            style={{
-              animation: 'fadeOut 300ms ease-in-out 5s forwards'
-            }}
+            style={{ animation: 'fadeOut 300ms ease-in-out 5s forwards' }}
           >
             <style jsx>{`
-              @keyframes fadeOut {
-                from { opacity: 1; }
-                to { opacity: 0; }
-              }
+              @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
             `}</style>
             <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
             <div className="min-w-0">
@@ -171,10 +177,49 @@ export default function Profile() {
           ...prev,
         ];
       });
-      
-      // Clean up URL parameter
       const url = new URL(window.location.href);
       url.searchParams.delete('kybSuccess');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [searchParams]);
+
+  // Bank setup required notification from URL
+  useEffect(() => {
+    const bankRequired = searchParams.get('bankSetupRequired');
+    if (bankRequired === 'true') {
+      setNotifications((prev) => {
+        // Prevent duplicate notification (e.g., React Strict Mode double effect)
+        const existingNotification = prev.find(n => 
+          n && typeof n === 'object' && 'key' in n && 
+          typeof (n as any).key === 'string' && (n as any).key.startsWith('bank-setup-')
+        );
+        if (existingNotification) {
+          return prev;
+        }
+        return [
+          <div 
+            key={`bank-setup-${Date.now()}`} 
+            className="flex items-start gap-3 rounded-md border bg-white p-3 shadow-sm opacity-100 transition-opacity duration-300"
+            onAnimationEnd={() => {
+              setTimeout(() => { setNotifications(prev => prev.slice(1)); }, 6000);
+            }}
+            style={{ animation: 'fadeOut 300ms ease-in-out 6s forwards' }}
+          >
+            <style jsx>{`
+              @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+            `}</style>
+            <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+            <div className="min-w-0">
+              <div className="text-sm font-medium">Payout Bank Account Needed</div>
+              <div className="text-xs text-gray-600">Please fill in your payout bank account details to list products and receive payments.</div>
+            </div>
+          </div>,
+          ...prev,
+        ];
+      });
+  
+      const url = new URL(window.location.href);
+      url.searchParams.delete('bankSetupRequired');
       window.history.replaceState({}, '', url.toString());
     }
   }, [searchParams]);
@@ -215,7 +260,13 @@ export default function Profile() {
             facebookUrl: data.data.facebookUrl || "",
             instagramUrl: data.data.instagramUrl || "",
             websiteUrl: data.data.websiteUrl || "",
-            contactNo: data.data.contactNo || ""
+            contactNo: data.data.contactNo || "",
+            // Payout Bank Account
+            bankAccountHolderName: data.data.bankAccountHolderName || "",
+            bankName: data.data.bankName || "",
+            bankAccountNumber: data.data.bankAccountNumber || "",
+            bankSwiftCode: data.data.bankSwiftCode || "",
+            bankRoutingNumber: data.data.bankRoutingNumber || "",
           };
           
           console.log("Setting form data:", formDataToSet);
@@ -605,14 +656,28 @@ export default function Profile() {
                         </svg>
                         Facebook URL
                       </Label>
-                      <Input
-                        id="facebookUrl"
-                        name="facebookUrl"
-                        type="url"
-                        value={formData.facebookUrl}
-                        onChange={handleInputChange}
-                        placeholder="https://facebook.com/yourbusiness"
-                      />
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div>
+                              <Input
+                                id="facebookUrl"
+                                name="facebookUrl"
+                                type="url"
+                                value={formData.facebookUrl}
+                                onChange={handleInputChange}
+                                placeholder="https://facebook.com/yourbusiness"
+                                disabled={profile?.subscriptionTier === 'FREE' || profile?.subscription?.tier === 'FREE'}
+                              />
+                            </div>
+                          </TooltipTrigger>
+                          {(profile?.subscriptionTier === 'FREE' || profile?.subscription?.tier === 'FREE') && (
+                            <TooltipContent>
+                              <p>Upgrade to a paid subscription plan to add social media links</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
 
                     <div className="space-y-2">
@@ -620,14 +685,28 @@ export default function Profile() {
                         <Instagram className="h-4 w-4 text-pink-600" />
                         Instagram URL
                       </Label>
-                      <Input
-                        id="instagramUrl"
-                        name="instagramUrl"
-                        type="url"
-                        value={formData.instagramUrl}
-                        onChange={handleInputChange}
-                        placeholder="https://instagram.com/yourbusiness"
-                      />
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div>
+                              <Input
+                                id="instagramUrl"
+                                name="instagramUrl"
+                                type="url"
+                                value={formData.instagramUrl}
+                                onChange={handleInputChange}
+                                placeholder="https://instagram.com/yourbusiness"
+                                disabled={profile?.subscriptionTier === 'FREE' || profile?.subscription?.tier === 'FREE'}
+                              />
+                            </div>
+                          </TooltipTrigger>
+                          {(profile?.subscriptionTier === 'FREE' || profile?.subscription?.tier === 'FREE') && (
+                            <TooltipContent>
+                              <p>Upgrade to a paid subscription plan to add social media links</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
@@ -635,16 +714,107 @@ export default function Profile() {
                         <Globe className="h-4 w-4 text-green-600" />
                         Website URL
                       </Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div>
+                              <Input
+                                id="websiteUrl"
+                                name="websiteUrl"
+                                type="url"
+                                value={formData.websiteUrl}
+                                onChange={handleInputChange}
+                                placeholder="https://yourbusiness.com"
+                                disabled={profile?.subscriptionTier === 'FREE' || profile?.subscription?.tier === 'FREE'}
+                              />
+                            </div>
+                          </TooltipTrigger>
+                          {(profile?.subscriptionTier === 'FREE' || profile?.subscription?.tier === 'FREE') && (
+                            <TooltipContent>
+                              <p>Upgrade to a paid subscription plan to add social media links</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payout Bank Account */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    <h3 className="text-lg font-semibold">Payout Bank Account</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="bankAccountHolderName" className="flex items-center gap-2">
+                        Account Holder Name
+                      </Label>
                       <Input
-                        id="websiteUrl"
-                        name="websiteUrl"
-                        type="url"
-                        value={formData.websiteUrl}
+                        id="bankAccountHolderName"
+                        name="bankAccountHolderName"
+                        value={formData.bankAccountHolderName}
                         onChange={handleInputChange}
-                        placeholder="https://yourbusiness.com"
+                        placeholder="Enter account holder's name"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bankName" className="flex items-center gap-2">
+                        Bank Name
+                      </Label>
+                      <Input
+                        id="bankName"
+                        name="bankName"
+                        value={formData.bankName}
+                        onChange={handleInputChange}
+                        placeholder="Enter bank name"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bankAccountNumber" className="flex items-center gap-2">
+                        Account Number
+                      </Label>
+                      <Input
+                        id="bankAccountNumber"
+                        name="bankAccountNumber"
+                        value={formData.bankAccountNumber}
+                        onChange={handleInputChange}
+                        placeholder="Enter bank account number"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bankSwiftCode" className="flex items-center gap-2">
+                        SWIFT / BIC (optional)
+                      </Label>
+                      <Input
+                        id="bankSwiftCode"
+                        name="bankSwiftCode"
+                        value={formData.bankSwiftCode}
+                        onChange={handleInputChange}
+                        placeholder="Enter SWIFT/BIC code"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bankRoutingNumber" className="flex items-center gap-2">
+                        Routing Number (optional)
+                      </Label>
+                      <Input
+                        id="bankRoutingNumber"
+                        name="bankRoutingNumber"
+                        value={formData.bankRoutingNumber}
+                        onChange={handleInputChange}
+                        placeholder="Enter routing number"
                       />
                     </div>
                   </div>
+
+                  <p className="text-xs text-gray-500">Note: We will transfer payouts directly to this bank account when your orders are paid.</p>
                 </div>
 
                 {/* Action Buttons */}

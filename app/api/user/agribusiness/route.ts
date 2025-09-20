@@ -33,6 +33,12 @@ export async function GET(request: NextRequest) {
         instagramUrl: true,
         websiteUrl: true,
         contactNo: true,
+        // Bank account fields
+        bankAccountHolderName: true,
+        bankName: true,
+        bankAccountNumber: true,
+        bankSwiftCode: true,
+        bankRoutingNumber: true,
         kybStatus: true,
         // Get subscription information instead of subscriptionTier
         subscription: {

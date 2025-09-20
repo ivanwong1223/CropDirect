@@ -58,6 +58,8 @@ export default function ProductList() {
   // State to manage the KYB status value and dialog open state
   const [kybStatus, setKybStatus] = useState<string | null>(null);
   const [kybDialogOpen, setKybDialogOpen] = useState(false);
+  // Bank setup completion flag (true only when essential bank fields are present)
+  const [bankSetupComplete, setBankSetupComplete] = useState<boolean | null>(null);
 
   // Format a string to Title Case
   const titleCase = (s: string) => s.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase());
@@ -160,6 +162,14 @@ export default function ProductList() {
           setLoading(false);
           return;
         }
+
+        // Determine if payout bank account is set (holder name, bank name, and account number required)
+        const bankComplete = Boolean(
+          agData.data?.bankAccountHolderName &&
+          agData.data?.bankName &&
+          agData.data?.bankAccountNumber
+        );
+        setBankSetupComplete(bankComplete);
 
         // Fetch products for this agribusiness
         const resp = await fetch(`/api/products?agribusinessId=${agData.data.id}`);
@@ -286,6 +296,9 @@ export default function ProductList() {
                 
                 if (shouldPrompt) {
                   setKybDialogOpen(true);
+                } else if (bankSetupComplete !== true) {
+                  // Redirect user to profile to complete payout bank setup
+                  router.push("/seller/my-profile?bankSetupRequired=true");
                 } else {
                   router.push("/seller/add-product");
                 }
@@ -343,6 +356,9 @@ export default function ProductList() {
                 
                 if (shouldPrompt) {
                   setKybDialogOpen(true);
+                } else if (bankSetupComplete !== true) {
+                  // Redirect user to profile to complete payout bank setup
+                  router.push("/seller/my-profile?bankSetupRequired=true");
                 } else {
                   router.push("/seller/add-product");
                 }

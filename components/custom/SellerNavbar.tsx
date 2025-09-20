@@ -234,7 +234,7 @@ export default function SellerNavbar({ className }: SellerNavbarProps) {
           </form>
 
           {/* Notifications */}
-          <div className="relative">
+          {/* <div className="relative">
             <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent">
               <Bell className="h-5 w-5" />
               {notificationCount > 0 && (
@@ -243,7 +243,7 @@ export default function SellerNavbar({ className }: SellerNavbarProps) {
                 </span>
               )}
             </button>
-          </div>
+          </div> */}
 
           {/* Language Selector */}
           <DropdownMenu>

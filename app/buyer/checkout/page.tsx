@@ -82,6 +82,10 @@ export default function CheckoutPage() {
   // Notifications state
   const [notifications, setNotifications] = useState<React.ReactNode[]>([]);
   const [logisticsPartner, setLogisticsPartner] = useState<{ id: string; companyName: string; businessImage?: string | null; estimatedDeliveryTime?: string | null; pricingModel?: string | null; pricingConfig?: string[] | null } | null>(null);
+  
+  // Loyalty state: available balance and points to redeem on this order
+  const [loyaltyBalance, setLoyaltyBalance] = useState<number>(0);
+  const [redeemPoints, setRedeemPoints] = useState<number>(0);
 
   // Add notification function
   const addNotification = (message: string, type: 'success' | 'error') => {
@@ -268,6 +272,10 @@ export default function CheckoutPage() {
           // Store BusinessBuyer profile id for order creation
           if (buyer.id) {
             setBuyerProfileId(buyer.id);
+          }
+          // Set loyalty points balance
+          if (typeof buyer.loyaltyPoints === 'number') {
+            setLoyaltyBalance(buyer.loyaltyPoints);
           }
           // Prefill company address and delivery address
           if (buyer.companyAddress) {
@@ -470,7 +478,12 @@ export default function CheckoutPage() {
       const subtotal = effectiveUnitPrice * quantity;
       const totalAmount = subtotal + Number(shippingCost || 0);
 
-      // Create Stripe checkout session directly (payment-first) Ivan here
+      // Loyalty redemption calculation to enforce limits before sending to backend
+      const POINT_VALUE_RM = 0.01; // 1 point = RM0.01
+      const maxByTotal = Math.floor((Number(totalAmount) || 0) / POINT_VALUE_RM);
+      const redeemPointsClamped = Math.max(0, Math.min(redeemPoints || 0, loyaltyBalance || 0, maxByTotal));
+
+      // Create Stripe checkout session directly (payment-first)
       const checkoutResponse = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {
@@ -506,6 +519,8 @@ export default function CheckoutPage() {
           notes: notes.trim() || null,
           // Logistics partner
           logisticsPartnerId: logisticsPartner?.id || null,
+          // Loyalty redemption
+          redeemPoints: redeemPointsClamped,
         })
       });
 
@@ -551,6 +566,13 @@ export default function CheckoutPage() {
   const effectiveUnitPrice = isBid && bidUnitPrice !== null ? bidUnitPrice : Number(product.pricing || 0);
   const subtotal = effectiveUnitPrice * quantity;
   const total = subtotal + Number(shippingCost || 0);
+
+  // Loyalty derived values for UI display
+  const POINT_VALUE_RM = 0.01; // 1 point = RM0.01
+  const maxByTotal = Math.floor((Number(total) || 0) / POINT_VALUE_RM);
+  const effectiveRedeemPoints = Math.max(0, Math.min(redeemPoints || 0, loyaltyBalance || 0, maxByTotal));
+  const loyaltyDiscountRM = effectiveRedeemPoints * POINT_VALUE_RM;
+  const adjustedTotal = Math.max(0, (Number(total) || 0) - loyaltyDiscountRM);
 
   // Get logistics details for display
   const logisticsDetails: Record<string, { deliveryTime: string; rateMethod: string }> = {
@@ -912,6 +934,57 @@ export default function CheckoutPage() {
                     </div>
                   </RadioGroup>
 
+                  {/* Loyalty Rewards: Optional redemption to discount the payable amount */}
+                  <div className="space-y-3 border rounded-md p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Loyalty Rewards</span>
+                      <Badge variant="secondary">{loyaltyBalance} pts</Badge>
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      Available is worth approx. {product.currency} {(Number(loyaltyBalance || 0) * POINT_VALUE_RM).toFixed(2)}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={Math.max(0, Math.min(Number(loyaltyBalance || 0), Number(maxByTotal || 0)))}
+                        value={Number(redeemPoints || 0)}
+                        onChange={(e) => {
+                          const raw = parseInt(e.target.value || '0', 10);
+                          const clamped = Math.max(0, Math.min(isNaN(raw) ? 0 : raw, Number(loyaltyBalance || 0), Number(maxByTotal || 0)));
+                          setRedeemPoints(clamped);
+                        }}
+                        className="w-36"
+                        aria-label="Points to redeem"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="cursor-pointer"
+                        onClick={() => setRedeemPoints(Math.max(0, Math.min(Number(loyaltyBalance || 0), Number(maxByTotal || 0))))}
+                      >
+                        Use Max
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="cursor-pointer"
+                        onClick={() => setRedeemPoints(0)}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                    {effectiveRedeemPoints > 0 && (
+                      <div className="flex items-center justify-between text-sm text-green-700">
+                        <span>Discount</span>
+                        <span>-
+                          {" "}
+                          {product.currency} {Number(loyaltyDiscountRM || 0).toFixed(2)} (−{effectiveRedeemPoints} pts)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
                   <Button
                     onClick={handleProceedToPayment}
                     className="w-full cursor-pointer"
@@ -928,11 +1001,10 @@ export default function CheckoutPage() {
                         Calculating Shipping...
                       </>
                     ) : (
-                      `Proceed to Payment - ${product.currency} ${Number(total || 0).toFixed(2)}`
+                      `Proceed to Payment - ${product.currency} ${Number(adjustedTotal || 0).toFixed(2)}`
                     )}
                   </Button>
-
-                  <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+                  <div className="mt-2 flex items-center justify-center gap-2 text-sm text-gray-600">
                     <Lock className="h-4 w-4" />
                     <AnimatedShinyText>
                       Secure payment powered by Stripe

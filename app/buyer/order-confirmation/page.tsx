@@ -30,6 +30,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 interface OrderDetails {
   id: string;
@@ -71,9 +72,22 @@ interface OrderDetails {
 
 interface PaymentSession {
   id: string;
+  url: string;
+  status: string;
   payment_status: string;
   amount_total: number;
   currency: string;
+  payment_method_types?: string[];
+  loyalty?: {
+    // Discount in RM applied due to redemption
+    discountRM?: number;
+    // Number of points redeemed on this order
+    redeemedPoints?: number;
+    // Number of points earned from this order
+    pointsEarned?: number;
+    // Balance after transaction
+    balanceAfter?: number | null;
+  } | null;
 }
 
 // Adds confirmation UI for buyer after Stripe session and formats numeric fields safely.
@@ -106,7 +120,11 @@ export default function OrderConfirmationPage() {
 
         if (data.success) {
           setOrder(data.data.order);
-          setPaymentSession(data.data.session);
+          // Attach loyalty info from API response to the payment session for easier UI rendering
+          setPaymentSession({
+            ...data.data.session,
+            loyalty: data.data.loyalty ?? null,
+          });
           
           if (data.data.session.payment_status === 'paid' && !modalShown) {
             setShowSuccessModal(true);
@@ -165,7 +183,7 @@ export default function OrderConfirmationPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Success Modal */}
+      {/* Success Modal Banner */}
       <motion.div 
         className="bg-white border-b"
         initial={{ opacity: 0, y: -20 }}
@@ -209,6 +227,51 @@ export default function OrderConfirmationPage() {
           </div>
         </div>
       </motion.div>
+
+      {/* Congratulations Dialog - opens after successful payment */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Congratulations! 🎉</DialogTitle>
+            <DialogDescription>
+              {typeof paymentSession?.loyalty?.pointsEarned === 'number' && paymentSession.loyalty.pointsEarned > 0
+                ? `You've earned ${paymentSession.loyalty.pointsEarned} loyalty points on this order.`
+                : 'Your payment was successful and your order has been confirmed.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Loyalty details if available */}
+          {paymentSession?.loyalty && (
+            <div className="space-y-2 text-sm">
+              {typeof paymentSession.loyalty.redeemedPoints === 'number' && paymentSession.loyalty.discountRM ? (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Redeemed</span>
+                  <span className="font-medium">
+                    {paymentSession.loyalty.redeemedPoints} pts → -{order.product.currency} {Number(paymentSession.loyalty.discountRM).toFixed(2)}
+                  </span>
+                </div>
+              ) : null}
+              {typeof paymentSession.loyalty.pointsEarned === 'number' && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Earned</span>
+                  <span className="font-medium">{paymentSession.loyalty.pointsEarned} pts</span>
+                </div>
+              )}
+              {typeof paymentSession.loyalty.balanceAfter === 'number' && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">New Balance</span>
+                  <span className="font-medium">{paymentSession.loyalty.balanceAfter} pts</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="mt-4 flex gap-2 justify-end">
+            <Button variant="outline" onClick={() => setShowSuccessModal(false)}>Close</Button>
+            <Button onClick={() => { setShowSuccessModal(false); location.assign('/buyer/my-orders'); }}>View My Orders</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Header Section - Only show if modal hasn't been shown */}
       {!modalShown && (
@@ -347,6 +410,31 @@ export default function OrderConfirmationPage() {
                           </TableCell>
                         </TableRow>
                       )}
+
+                      {/* Loyalty discount and points rows (if applicable) */}
+                      {/* {paymentSession?.loyalty?.discountRM && paymentSession.loyalty.discountRM > 0 && (
+                        <>
+                          <TableRow>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">Loyalty</Badge>
+                                Discount
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right text-green-600">
+                              - {order.product.currency} {Number(paymentSession.loyalty.discountRM).toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                          {typeof paymentSession.loyalty.redeemedPoints === 'number' && (
+                            <TableRow>
+                              <TableCell className="font-medium text-gray-600">Points Redeemed</TableCell>
+                              <TableCell className="text-right text-gray-600">
+                                {paymentSession.loyalty.redeemedPoints} pts
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </>
+                      )} */}
                     </TableBody>
                   </Table>
 
@@ -506,6 +594,36 @@ export default function OrderConfirmationPage() {
                       {order?.transactions?.[0]?.id}
                     </span>
                   </div>
+
+                  {/* Loyalty summary block */}
+                  {paymentSession?.loyalty && (
+                    <>
+                      <Separator className="my-2" />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900 mb-2">Loyalty</div>
+                        {typeof paymentSession.loyalty.redeemedPoints === 'number' && paymentSession.loyalty.discountRM ? (
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-600">Redeemed</span>
+                            <span className="font-medium">
+                              {paymentSession.loyalty.redeemedPoints} pts → -{order.product.currency} {Number(paymentSession.loyalty.discountRM).toFixed(2)}
+                            </span>
+                          </div>
+                        ) : null}
+                        {typeof paymentSession.loyalty.pointsEarned === 'number' && (
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-600">Earned</span>
+                            <span className="font-medium">{paymentSession.loyalty.pointsEarned} pts</span>
+                          </div>
+                        )}
+                        {typeof paymentSession.loyalty.balanceAfter === 'number' && (
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-600">New Balance</span>
+                            <span className="font-medium">{paymentSession.loyalty.balanceAfter} pts</span>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                   
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Order Date:</span>

@@ -20,6 +20,12 @@ export async function PUT(request: NextRequest) {
       instagramUrl,
       websiteUrl,
       contactNo,
+      // bank fields
+      bankAccountHolderName,
+      bankName,
+      bankAccountNumber,
+      bankSwiftCode,
+      bankRoutingNumber,
     } = body;
 
     if (!userId) {
@@ -58,6 +64,12 @@ export async function PUT(request: NextRequest) {
           instagramUrl,
           websiteUrl,
           contactNo,
+          // bank fields
+          bankAccountHolderName,
+          bankName,
+          bankAccountNumber,
+          bankSwiftCode,
+          bankRoutingNumber,
         }
       });
 
