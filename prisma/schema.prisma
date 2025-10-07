@@ -100,7 +100,8 @@ model KYBForm {
   
   // KYB-specific fields
   businessRegistrationNumber String?
-  businessAddress       String
+  businessAddress       String?
+  countryCode           String?            // ISO country code for incorporation (e.g., "MY")
   taxId                 String?
   businessLicense       String?           // File path or URL
   

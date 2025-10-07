@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             businessRegistrationNumber: true,
-            businessAddress: true,
+            countryCode: true,
             taxId: true,
             businessLicense: true,
             submittedAt: true,

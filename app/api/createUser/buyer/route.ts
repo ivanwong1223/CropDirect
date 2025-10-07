@@ -60,7 +60,6 @@ export async function POST(request: NextRequest) {
 
     // Define default profile images (fallbacks)
     const defaultImages = [
-      "/anonymous-business.svg",
       "https://avatars.githubusercontent.com/u/106103625",
       "https://avatars.githubusercontent.com/u/59442788",
     ];

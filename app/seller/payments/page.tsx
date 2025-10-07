@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { 
   DollarSign, 
@@ -30,12 +30,92 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
-import { mockSalesTransactions, type SalesTransaction } from "@/lib/mockData";
+import { getUserData } from "@/lib/localStorage";
+
+// Sales Transaction interface aligned with backend
+interface SalesTransaction {
+  id: string;
+  invoiceId: string; // mirror id for UI display
+  orderId: string;
+  productTitle: string;
+  quantity: number;
+  paymentMethod: string;
+  amountPaid: number;
+  currency: string;
+  paidAt: string | Date;
+  // Refund tracking fields
+  isRefunded?: boolean;
+  refundAmount?: number | null;
+  refundReason?: string | null;
+  refundedAt?: string | Date | null;
+  stripeRefundId?: string | null;
+}
 
 export default function PaymentsPage() {
-  const [transactions, setTransactions] = useState<SalesTransaction[]>(mockSalesTransactions);
+  const [transactions, setTransactions] = useState<SalesTransaction[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTransaction, setSelectedTransaction] = useState<SalesTransaction | null>(null);
+
+  // Initialize by fetching seller profile then transactions
+  useEffect(() => {
+    async function loadTransactions() {
+      try {
+        const user = getUserData();
+        if (!user?.id) return;
+        // Get seller (agribusiness) id
+        const sellerRes = await fetch(`/api/user/agribusiness?userId=${user.id}`);
+        const sellerJson = await sellerRes.json();
+        if (!sellerJson?.success || !sellerJson?.data?.id) return;
+        const sellerId = sellerJson.data.id as string;
+
+        // Fetch seller payments history
+        const params = new URLSearchParams();
+        params.set("sellerId", sellerId);
+        params.set("page", "1");
+        params.set("pageSize", "50");
+        const txRes = await fetch(`/api/payments/seller-history?${params.toString()}`);
+        const txJson = await txRes.json();
+        if (!txJson?.success) return;
+
+        const items = (txJson.data?.items || []) as Array<{
+          id: string;
+          orderId: string;
+          amountPaid: number;
+          currency: string;
+          paymentMethod: string;
+          paidAt: string;
+          order: { quantity: number; product: { productTitle: string } };
+          isRefunded?: boolean;
+          refundAmount?: number | null;
+          refundReason?: string | null;
+          refundedAt?: string | null;
+          stripeRefundId?: string | null;
+        }>;
+
+        const mapped: SalesTransaction[] = items.map((t) => ({
+          id: t.id,
+          invoiceId: t.id,
+          orderId: t.orderId,
+          productTitle: t.order?.product?.productTitle || "-",
+          quantity: t.order?.quantity ?? 0,
+          paymentMethod: t.paymentMethod,
+          amountPaid: Number(t.amountPaid || 0),
+          currency: t.currency || "RM",
+          paidAt: t.paidAt,
+          isRefunded: t.isRefunded,
+          refundAmount: t.refundAmount ?? null,
+          refundReason: t.refundReason ?? null,
+          refundedAt: t.refundedAt ?? null,
+          stripeRefundId: t.stripeRefundId ?? null,
+        }));
+
+        setTransactions(mapped);
+      } catch (e) {
+        console.error("Failed to load transactions", e);
+      }
+    }
+    loadTransactions();
+  }, []);
 
   // Filter transactions based on search term
   const filteredTransactions = transactions.filter(transaction =>

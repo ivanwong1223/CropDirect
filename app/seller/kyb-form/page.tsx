@@ -11,7 +11,7 @@ import NotificationContainer from "@/components/custom/NotificationContainer";
 // Form data interface based on KYBForm model
 interface KYBFormData {
   businessRegistrationNumber: string;
-  businessAddress: string;
+  countryCode: string;
   taxId: string;
   businessLicense: File | null;
 }
@@ -23,7 +23,7 @@ interface KYBStatus {
   kybForm: {
     id: string;
     businessRegistrationNumber: string;
-    businessAddress: string;
+    countryCode: string;
     taxId: string;
     businessLicense: string;
     submittedAt: string;
@@ -40,7 +40,7 @@ const KYBForm: React.FC = () => {
   const [kybStatus, setKybStatus] = useState<KYBStatus | null>(null);
   const [formData, setFormData] = useState<KYBFormData>({
     businessRegistrationNumber: "",
-    businessAddress: "",
+    countryCode: "MY",
     taxId: "",
     businessLicense: null,
   });
@@ -81,7 +81,7 @@ const KYBForm: React.FC = () => {
   };
 
   // Handle input changes
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -146,11 +146,175 @@ const KYBForm: React.FC = () => {
     setIsLoading(true);
 
     try {
+      // Country-based pre-verification: MY uses OCR, others use global verify-kyb
+      if (formData.countryCode === 'MY') {
+        // OCR path for Malaysia
+        if (!formData.businessLicense) {
+          const ts = new Date().toLocaleTimeString();
+          setNotifications((prev) => [
+            <div 
+              key={`no-file-${Date.now()}`} 
+              className="flex items-start gap-3 rounded-md border bg-white p-3 shadow-sm opacity-100 transition-opacity duration-300"
+              onAnimationEnd={() => {
+                setTimeout(() => {
+                  setNotifications(prev => prev.slice(1));
+                }, 5000);
+              }}
+              style={{
+                animation: 'fadeOut 300ms ease-in-out 5s forwards'
+              }}
+            >
+              <style jsx>{`
+                @keyframes fadeOut {
+                  from { opacity: 1; }
+                  to { opacity: 0; }
+                }
+              `}</style>
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-red-700">Missing Document</div>
+                <div className="text-xs text-gray-600">Please upload your business license document. {ts}</div>
+              </div>
+            </div>,
+            ...prev,
+          ]);
+          setIsLoading(false);
+          return;
+        }
+
+        const ocrFormData = new FormData();
+        ocrFormData.append('file', formData.businessLicense);
+        ocrFormData.append('registrationNumber', formData.businessRegistrationNumber);
+
+        const ocrRes = await fetch('/api/ocr', {
+          method: 'POST',
+          body: ocrFormData,
+        });
+
+        if (!ocrRes.ok) {
+          const ts = new Date().toLocaleTimeString();
+          setNotifications((prev) => [
+            <div 
+              key={`ocr-error-${Date.now()}`} 
+              className="flex items-start gap-3 rounded-md border bg-white p-3 shadow-sm opacity-100 transition-opacity duration-300"
+              onAnimationEnd={() => {
+                setTimeout(() => {
+                  setNotifications(prev => prev.slice(1));
+                }, 5000);
+              }}
+              style={{
+                animation: 'fadeOut 300ms ease-in-out 5s forwards'
+              }}
+            >
+              <style jsx>{`
+                @keyframes fadeOut {
+                  from { opacity: 1; }
+                  to { opacity: 0; }
+                }
+              `}</style>
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-red-700">OCR Verification Failed</div>
+                <div className="text-xs text-gray-600">Unable to process the document via OCR. {ts}</div>
+              </div>
+            </div>,
+            ...prev,
+          ]);
+          setIsLoading(false);
+          return;
+        }
+
+        const ocrJson = await ocrRes.json();
+        const ocrMatch = Boolean(ocrJson?.match);
+
+        if (!ocrMatch) {
+          const ts = new Date().toLocaleTimeString();
+          setNotifications((prev) => [
+            <div 
+              key={`ocr-no-match-${Date.now()}`} 
+              className="flex items-start gap-3 rounded-md border bg-white p-3 shadow-sm opacity-100 transition-opacity duration-300"
+              onAnimationEnd={() => {
+                setTimeout(() => {
+                  setNotifications(prev => prev.slice(1));
+                }, 5000);
+              }}
+              style={{
+                animation: 'fadeOut 300ms ease-in-out 5s forwards'
+              }}
+            >
+              <style jsx>{`
+                @keyframes fadeOut {
+                  from { opacity: 1; }
+                  to { opacity: 0; }
+                }
+              `}</style>
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-red-700">Verification Failed</div>
+                <div className="text-xs text-gray-600">Registration number not found in the document OCR. {ts}</div>
+              </div>
+            </div>,
+            ...prev,
+          ]);
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        // Global verification path for non-Malaysia countries
+        const verifyRes = await fetch('/api/verify-kyb', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            registrationNumber: formData.businessRegistrationNumber,
+            countryCode: formData.countryCode,
+            isConsent: true,
+          }),
+        });
+
+        if (!verifyRes.ok) {
+          const ts = new Date().toLocaleTimeString();
+          setNotifications((prev) => [
+            <div 
+              key={`verify-error-${Date.now()}`} 
+              className="flex items-start gap-3 rounded-md border bg-white p-3 shadow-sm opacity-100 transition-opacity duration-300"
+              onAnimationEnd={() => {
+                setTimeout(() => {
+                  setNotifications(prev => prev.slice(1));
+                }, 5000);
+              }}
+              style={{
+                animation: 'fadeOut 300ms ease-in-out 5s forwards'
+              }}
+            >
+              <style jsx>{`
+                @keyframes fadeOut {
+                  from { opacity: 1; }
+                  to { opacity: 0; }
+                }
+              `}</style>
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-red-700">Verification Failed</div>
+                <div className="text-xs text-gray-600">Unable to verify company with global KYB. {ts}</div>
+              </div>
+            </div>,
+            ...prev,
+          ]);
+          setIsLoading(false);
+          return;
+        }
+
+        // Optionally inspect response data for more detailed status
+        // const verifyJson = await verifyRes.json();
+      }
+
       const submitFormData = new FormData();
       submitFormData.append("userId", userId);
       submitFormData.append("businessRegistrationNumber", formData.businessRegistrationNumber);
-      submitFormData.append("businessAddress", formData.businessAddress);
+      submitFormData.append("countryCode", formData.countryCode);
       submitFormData.append("taxId", formData.taxId);
+      // Indicate immediate approval after successful OCR verification
+      submitFormData.append("kybStatus", "APPROVED");
       
       if (formData.businessLicense) {
         submitFormData.append("businessLicense", formData.businessLicense);
@@ -347,8 +511,8 @@ const KYBForm: React.FC = () => {
                   <span className="ml-2 text-gray-800">{kybStatus.kybForm.businessRegistrationNumber || 'Not provided'}</span>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-600">Business Address:</span>
-                  <span className="ml-2 text-gray-800">{kybStatus.kybForm.businessAddress}</span>
+                  <span className="font-medium text-gray-600">Country of Incorporation:</span>
+                  <span className="ml-2 text-gray-800">{kybStatus.kybForm.countryCode || 'Not provided'}</span>
                 </div>
                 <div>
                   <span className="font-medium text-gray-600">Tax ID:</span>
@@ -455,21 +619,23 @@ const KYBForm: React.FC = () => {
             />
           </div>
 
-          {/* Business Address */}
+          {/* Country of Incorporation */}
           <div>
-            <label htmlFor="businessAddress" className="block text-sm font-medium text-gray-700 mb-2">
-              Business Address<span className='text-red-500'>*</span>
+            <label htmlFor="countryCode" className="block text-sm font-medium text-gray-700 mb-2">
+              Country of Incorporation<span className='text-red-500'>*</span>
             </label>
-            <textarea
-              id="businessAddress"
-              name="businessAddress"
-              value={formData.businessAddress}
+            <select
+              id="countryCode"
+              name="countryCode"
+              value={formData.countryCode}
               onChange={handleChange}
               required
-              rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
-              placeholder="Enter your complete business address"
-            />
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white"
+            >
+              <option value="MY">Malaysia</option>
+              <option value="SG">Singapore</option>
+              <option value="IN">India</option>
+            </select>
           </div>
 
           {/* Tax ID */}
@@ -578,7 +744,7 @@ const KYBForm: React.FC = () => {
                 </h3>
                 <div className="mt-2 text-sm text-blue-700">
                   <p>
-                    Your KYB application will be reviewed through OCR scan within 1-2 business days. 
+                    Your KYB application will be reviewed through the OCR scan. 
                     You will receive a notification once the review is complete.
                   </p>
                 </div>

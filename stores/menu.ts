@@ -5,7 +5,7 @@ export interface MenuItem {
   name: string;
   route: string;
   isActive?: boolean;
-  badge?: string; // For notification counts
+  // badge?: string; // For notification counts
   permission?: string; // For role-based access
   icon?: string; // Icon name from lucide-react
 }
@@ -49,14 +49,14 @@ const menuData: MenuSection[] = [
         id: 'orders',
         name: 'Orders',
         route: '/seller/orders',
-        badge: '1',
+        // badge: '1',
         icon: 'ShoppingCart'
       },
       {
         id: 'message',
         name: 'Messages',
         route: '/seller/chat',
-        badge: '5',
+        // badge: '5',
         icon: 'MessageSquare'
       },
       {

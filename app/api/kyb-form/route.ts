@@ -10,17 +10,9 @@ export async function POST(request: NextRequest) {
     
     // Extract form fields
     const businessRegistrationNumber = formData.get("businessRegistrationNumber") as string;
-    const businessAddress = formData.get("businessAddress") as string;
+    const countryCode = formData.get("countryCode") as string;
     const taxId = formData.get("taxId") as string;
     const businessLicenseFile = formData.get("businessLicense") as File;
-
-    // Validate required fields
-    if (!businessRegistrationNumber || !businessAddress) {
-      return NextResponse.json(
-        { error: "Business registration number and address are required" },
-        { status: 400 }
-      );
-    }
 
     if (!businessLicenseFile) {
       return NextResponse.json(
@@ -90,7 +82,7 @@ export async function POST(request: NextRequest) {
       data: {
         agribusinessId: agribusiness.id,
         businessRegistrationNumber: businessRegistrationNumber || null,
-        businessAddress,
+        countryCode: countryCode || null,
         taxId: taxId || null,
         businessLicense: businessLicensePath,
         submittedAt: new Date(),
@@ -104,7 +96,7 @@ export async function POST(request: NextRequest) {
     await prisma.agribusiness.update({
       where: { id: agribusiness.id },
       data: {
-        kybStatus: "PENDING",
+        kybStatus: "APPROVED",
       },
     });
 
@@ -112,7 +104,7 @@ export async function POST(request: NextRequest) {
       {
         message: "Your KYB form has submitted successfully!",
         kybFormId: kybForm.id,
-        status: "PENDING",
+        status: "APPROVED",
       },
       { status: 201 }
     );
@@ -159,7 +151,7 @@ export async function GET(request: NextRequest) {
       kybForm: agribusiness.kybForm ? {
         id: agribusiness.kybForm.id,
         businessRegistrationNumber: agribusiness.kybForm.businessRegistrationNumber,
-        businessAddress: agribusiness.kybForm.businessAddress,
+        countryCode: agribusiness.kybForm.countryCode,
         taxId: agribusiness.kybForm.taxId,
         businessLicense: agribusiness.kybForm.businessLicense,
         submittedAt: agribusiness.kybForm.submittedAt,

@@ -127,7 +127,7 @@ export default function SellerSignUpPage() {
       if (needsOnboarding) {
         setIsGoogleConnected(true);
         if (user?.email) {
-          setFormData(prev => ({ ...prev, email: user.email }));
+          setFormData(prev => ({ ...prev, email: user.email || "" }));
         }
         router.replace('/sign-up/seller');
       } else if (user) {

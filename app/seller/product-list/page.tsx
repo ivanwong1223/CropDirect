@@ -17,6 +17,12 @@ import {
   AlertDialogHeader, 
   AlertDialogTitle 
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Package, Plus, MapPin, Tag, Layers, ShoppingBasket, Edit, Trash2, CheckCircle } from "lucide-react";
 import { getUserData } from "@/lib/localStorage";
 import NotificationContainer from "@/components/custom/NotificationContainer";
@@ -60,6 +66,8 @@ export default function ProductList() {
   const [kybDialogOpen, setKybDialogOpen] = useState(false);
   // Bank setup completion flag (true only when essential bank fields are present)
   const [bankSetupComplete, setBankSetupComplete] = useState<boolean | null>(null);
+  // Subscription tier for product limit checking
+  const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null);
 
   // Format a string to Title Case
   const titleCase = (s: string) => s.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase());
@@ -171,6 +179,9 @@ export default function ProductList() {
         );
         setBankSetupComplete(bankComplete);
 
+        // Set subscription tier for product limit checking
+        setSubscriptionTier(agData.data?.subscriptionTier || "FREE");
+
         // Fetch products for this agribusiness
         const resp = await fetch(`/api/products?agribusinessId=${agData.data.id}`);
         const data = await resp.json();
@@ -274,6 +285,18 @@ export default function ProductList() {
 
   const hasProducts = useMemo(() => products && products.length > 0, [products]);
 
+  // Check if user has reached product limit for FREE tier
+  const hasReachedProductLimit = useMemo(() => {
+    if (subscriptionTier !== "FREE") return false;
+    const FREE_TIER_PRODUCT_LIMIT = 3; // Define the limit for FREE tier users
+    return products.length >= FREE_TIER_PRODUCT_LIMIT;
+  }, [subscriptionTier, products.length]);
+
+  // Check if Add New Product button should be disabled
+  const isAddProductDisabled = useMemo(() => {
+    return hasReachedProductLimit;
+  }, [hasReachedProductLimit]);
+
   return (
     <div className="px-6 py-8 max-w-7xl mx-auto relative">
       {/* Top-right notifications */}
@@ -284,28 +307,44 @@ export default function ProductList() {
           <h1 className="text-3xl font-bold text-gray-900 mb-1">Your Product List</h1>
           <p className="text-gray-600">View and manage the products you have created</p>
         </div>
-        <Button
-          className="cursor-pointer"
-          onClick={() => {
-                // Check KYB status before allowing navigation
-                const shouldPrompt = [
-                  "NOT_SUBMITTED",
-                  "REJECTED",
-                  "REQUIRES_RESUBMISSION",
-                ].includes(kybStatus || "");
-                
-                if (shouldPrompt) {
-                  setKybDialogOpen(true);
-                } else if (bankSetupComplete !== true) {
-                  // Redirect user to profile to complete payout bank setup
-                  router.push("/seller/my-profile?bankSetupRequired=true");
-                } else {
-                  router.push("/seller/add-product");
-                }
-              }}
-        >
-          <Plus className="mr-2" /> Add New Product
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <Button
+                  className={`cursor-pointer ${isAddProductDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={isAddProductDisabled}
+                  onClick={() => {
+                    if (isAddProductDisabled) return;
+                    
+                    // Check KYB status before allowing navigation
+                    const shouldPrompt = [
+                      "NOT_SUBMITTED",
+                      "REJECTED",
+                      "REQUIRES_RESUBMISSION",
+                    ].includes(kybStatus || "");
+                    
+                    if (shouldPrompt) {
+                      setKybDialogOpen(true);
+                    } else if (bankSetupComplete !== true) {
+                      // Redirect user to profile to complete payout bank setup
+                      router.push("/seller/my-profile?bankSetupRequired=true");
+                    } else {
+                      router.push("/seller/add-product");
+                    }
+                  }}
+                >
+                  <Plus className="mr-2" /> Add New Product
+                </Button>
+              </div>
+            </TooltipTrigger>
+            {isAddProductDisabled && (
+              <TooltipContent>
+                <p>You have reached your product listing limit (3 products) for the FREE subscription tier. Upgrade your subscription to list more products.</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {loading && (

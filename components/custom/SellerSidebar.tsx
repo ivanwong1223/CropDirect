@@ -189,11 +189,11 @@ export default function SellerSidebar({
                 >
                   {renderIcon(item.icon)}
                   {item.name}
-                  {item.badge && (
+                  {/* {item.badge && (
                     <span className="ml-auto bg-red-700 text-white text-xs rounded-full px-1.5 py-0.5">
                       {item.badge}
                     </span>
-                  )}
+                  )} */}
                 </button>
               </li>
             ))
