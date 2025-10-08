@@ -21,6 +21,19 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+/**
+ * Handles smooth scrolling to a specific section on the page
+ * @param sectionId - The id of the section to scroll to
+ */
+const handleSmoothScroll = (sectionId: string) => {
+  const element = document.getElementById(sectionId);
+  if (element) {
+    element.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }
+};
 
 export default function Navbar() {
   const router = useRouter();
@@ -85,18 +98,24 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex md:items-center md:space-x-8">
-            <Link href="/about" className="text-lg font-semibold tracking-tight text-white hover:text-yellow-400 transition-colors">
+            <button 
+              onClick={() => handleSmoothScroll('about')}
+              className="text-lg font-semibold tracking-tight text-white hover:text-yellow-400 transition-colors cursor-pointer bg-transparent border-none"
+            >
               About Us
-            </Link>
-            <Link href="/market" className="text-lg font-semibold tracking-tight text-white hover:text-yellow-400 transition-colors">
+            </button>
+            {/* <Link href="/market" className="text-lg font-semibold tracking-tight text-white hover:text-yellow-400 transition-colors">
               Market
-            </Link>
+            </Link> */}
             <Link href="/services" className="text-lg font-semibold tracking-tight text-white hover:text-yellow-400 transition-colors">
               Services
             </Link>
-            <Link href="/solutions" className="text-lg font-semibold tracking-tight text-white hover:text-yellow-400 transition-colors">
+            <button 
+              onClick={() => handleSmoothScroll('solutions')}
+              className="text-lg font-semibold tracking-tight text-white hover:text-yellow-400 transition-colors cursor-pointer bg-transparent border-none"
+            >
               Solutions
-            </Link>
+            </button>
           </div>
 
           {/* Auth Buttons */}

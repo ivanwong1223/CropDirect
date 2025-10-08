@@ -302,11 +302,18 @@ export default function SellerOrdersPage() {
 
   const rows = useMemo(() => {
     const sortedOrders = [...(orders || [])];
-    // Sort by status: pending first, then confirmed, then others
+    // Sort by status: Ready for Pickup at top, Cancelled at bottom
     sortedOrders.sort((a, b) => {
-      const statusOrder = { 'pending': 0, 'confirmed': 1 };
-      const aOrder = statusOrder[a.status as keyof typeof statusOrder] ?? 2;
-      const bOrder = statusOrder[b.status as keyof typeof statusOrder] ?? 2;
+      const statusOrder = { 
+        'ready_for_pickup': 1,
+        'pending': 0, 
+        'confirmed': 2, 
+        'shipped': 3,
+        'delivered': 4,
+        'cancelled': 5          // Bottom priority
+      };
+      const aOrder = statusOrder[a.status as keyof typeof statusOrder] ?? 3;
+      const bOrder = statusOrder[b.status as keyof typeof statusOrder] ?? 3;
       return aOrder - bOrder;
     });
     return sortedOrders;

@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "CropDirect - Your Direct Farm-to-Market Platform",
   description: "Connecting agribusinesses with buyers and logistics partners through sustainable, innovative solutions.",
+  icons: {
+    icon: "/cropdirect_loginlogo-whiteBG.jpg",
+  },
 };
 
 export default function RootLayout({

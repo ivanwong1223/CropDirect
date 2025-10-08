@@ -57,12 +57,15 @@ export default function Home() {
                 <IoMdInformationCircleOutline className="text-lg" />
                 <span>Discover More</span>
               </button>
-              <button className="relative flex items-center gap-1 bg-neutral-900 px-9 py-3 border-2 border-transparent space-x-2 text-base rounded-lg font-semibold text-white cursor-pointer overflow-hidden transition-all duration-600 ease-custom hover:bg-yellow-400 hover:text-black group">
+              <button 
+                onClick={() => window.location.href = '/sign-in'} 
+                className="relative flex items-center gap-1 bg-neutral-900 px-9 py-3 border-2 border-transparent space-x-2 text-base rounded-lg font-semibold text-white cursor-pointer overflow-hidden transition-all duration-600 ease-custom hover:bg-yellow-400 hover:text-black group"
+              >
                 <svg viewBox="0 0 24 24" className="absolute w-6 fill-white z-[9] transition-all duration-700 ease-custom -left-1/4 group-hover:left-4 group-hover:fill-black" xmlns="http://www.w3.org/2000/svg">
                   <path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path>
                 </svg>
                 <span className="relative z-[1] transition-all duration-700 ease-custom -translate-x-3 group-hover:translate-x-3">
-                  View Market
+                  Get Started
                 </span>
                 <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 bg-yellow-400 rounded-full opacity-0 transition-all duration-700 ease-custom group-hover:w-[220px] group-hover:h-[220px] group-hover:opacity-100"></span>
                 <svg viewBox="0 0 24 24" className="absolute w-6 fill-white z-[9] transition-all duration-700 ease-custom right-4 group-hover:-right-1/4 group-hover:fill-yellow-400" xmlns="http://www.w3.org/2000/svg">
@@ -87,7 +90,7 @@ export default function Home() {
       </section>
 
       {/* About Section */}
-      <section className="relative bg-[#F5F9EB] py-10 px-8 lg:py-30 lg:px-33">
+      <section id="about" className="relative bg-[#F5F9EB] py-10 px-8 lg:py-30 lg:px-33">
         {/* Header Section */}
         <div className="text-left max-w-4xl">
           <p className="text-black text-sm font-semibold uppercase tracking-wide flex items-center gap-2">
@@ -138,7 +141,7 @@ export default function Home() {
       </section>
 
       {/* Our Solution */}
-      <section className="relative bg-white py-16 px-8 lg:py-24 lg:px-24">
+      <section id="solutions" className="relative bg-white py-16 px-8 lg:py-24 lg:px-24">
         <div className="text-center max-w-4xl mx-auto pb-10">
           <div className="inline-flex items-center px-6 py-2 bg-white border border-gray-200 rounded-full mb-6">
             <span className="text-sm font-normal tracking-wide text-gray-700">Valuable Features</span>

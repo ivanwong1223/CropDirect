@@ -106,7 +106,7 @@ export default function LogisticsDashboard() {
     setError(null);
     try {
       const res = await fetch(
-        `/api/logistics/orders?logisticsPartnerId=${encodeURIComponent(logisticsPartnerId)}`
+        `/api/logistics/orders?logisticsPartnerId=${encodeURIComponent(logisticsPartnerId)}&statusNot=cancelled`
       );
       const data = await res.json();
       if (!res.ok || !data.success)
@@ -134,7 +134,7 @@ export default function LogisticsDashboard() {
   );
 
   const pendingPickups = orders.filter((o) => ["confirmed", "Ready to Pickup"].includes(o.status)).length;
-  const cancelled = orders.filter((o) => (o.status || "").toLowerCase().includes("cancel")).length;
+  const cancelled = 0; // Cancelled orders are now excluded from the dataset
   const delayed = orders.filter((o) => {
     if (!o.estimatedDeliveryTime) return false;
     const eta = new Date(o.estimatedDeliveryTime);
@@ -276,6 +276,9 @@ export default function LogisticsDashboard() {
               <div className="text-sm text-gray-700">Cancelled / Flagged</div>
               <Badge className="bg-gray-200 text-gray-800 hover:bg-gray-200">{cancelled}</Badge>
             </div>
+            <div className="text-xs text-gray-500 mt-1">
+              Cancelled orders are not assigned to logistics partners
+            </div>
             <div className="pt-2">
               <Link
                 href="/logistics/delivery/list-page"
@@ -352,8 +355,8 @@ export default function LogisticsDashboard() {
                               "capitalize",
                               o.status === "Delivered" && "bg-green-100 text-green-800",
                               ["Picked Up", "In Transit"].includes(o.status) && "bg-indigo-100 text-indigo-800",
-                              ["confirmed", "Ready to Pickup"].includes(o.status) && "bg-yellow-100 text-yellow-800",
-                              (o.status || "").toLowerCase().includes("cancel") && "bg-gray-200 text-gray-800"
+                              ["confirmed", "Ready to Pickup"].includes(o.status) && "bg-yellow-100 text-yellow-800"
+                              // Removed cancelled status styling since cancelled orders are now excluded
                             )}
                           >
                             {o.status}
