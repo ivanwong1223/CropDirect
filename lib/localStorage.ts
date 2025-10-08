@@ -13,11 +13,13 @@ interface UserData {
 
 // Function to set store data in local storage
 function setStoreData(userData: UserData): void {
+  if (typeof window === 'undefined') return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
 }
 
 // Function to get store data from local storage
 function getStoreData(): UserData | null {
+  if (typeof window === 'undefined') return null;
   const data = localStorage.getItem(STORAGE_KEY);
   return data ? JSON.parse(data) : null;
 }
@@ -41,6 +43,7 @@ function isAuthenticated(): boolean {
 
 // Function to clear user data from local storage (logout)
 function clearStoreData(): void {
+  if (typeof window === 'undefined') return;
   localStorage.removeItem(STORAGE_KEY);
 }
 

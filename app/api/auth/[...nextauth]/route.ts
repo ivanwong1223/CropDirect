@@ -42,7 +42,7 @@ const handler = NextAuth({
      *   - If user exists: attach id, role, and name; no onboarding required.
      *   - If not: mark requiresOnboarding = true so the UI can prompt role selection and registration.
      */
-    async jwt({ token, account, profile }: { token: JWT; account?: Account | null; profile?: GoogleProfile | null }) {
+    async jwt({ token, account, profile }) {
       try {
         if (account?.provider === 'google') {
           const email = token.email ?? profile?.email ?? null

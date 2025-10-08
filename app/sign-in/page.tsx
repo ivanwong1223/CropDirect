@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import {
   Typography,
   IconButton,
@@ -52,7 +52,7 @@ const fadeIn = {
    name?: string | null
  }
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
@@ -70,7 +70,9 @@ export default function LoginPage() {
   // Handle Google OAuth flow based on user existence
   // Show onboarding error only once immediately after explicit Google sign-in
   useEffect(() => {
-    const initiated = typeof window !== 'undefined' ? localStorage.getItem('googleSignInInitiated') : null
+    if (typeof window === 'undefined') return;
+    
+    const initiated = localStorage.getItem('googleSignInInitiated')
     if (!initiated) return
 
     const user = session?.user as SessionUserWithOnboarding | undefined
@@ -86,9 +88,7 @@ export default function LoginPage() {
         }, 5000)
       }
       // Clear the intent flag so reloading the page will NOT duplicate the message
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('googleSignInInitiated')
-      }
+      localStorage.removeItem('googleSignInInitiated')
     }
   }, [status, session]);
 
@@ -200,9 +200,7 @@ export default function LoginPage() {
       setError("") // Clear any previous errors
 
       // Mark that user explicitly initiated Google sign-in from this page
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('googleSignInInitiated', '1')
-      }
+      localStorage.setItem('googleSignInInitiated', '1')
       
       // Sign in with Google without oauth parameter initially
       // The useEffect will handle the flow based on whether user exists
@@ -215,9 +213,7 @@ export default function LoginPage() {
       // We'll let the useEffect handle the rest of the flow
       if (result?.error) {
         setError('Failed to connect to Google. Please try again.')
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('googleSignInInitiated')
-        }
+        localStorage.removeItem('googleSignInInitiated')
         return
       }
 
@@ -241,6 +237,11 @@ export default function LoginPage() {
           size="lg"
           onClick={() => router.push("/")}
           className="rounded-full cursor-pointer"
+          placeholder={undefined}
+          onResize={undefined}
+          onResizeCapture={undefined}
+          onPointerEnterCapture={undefined}
+          onPointerLeaveCapture={undefined}
         >
           <ArrowLeft className="h-5 w-5" />
         </IconButton>
@@ -272,12 +273,22 @@ export default function LoginPage() {
               variant="h4"
               color="blue-gray"
               className="mb-2 font-bold"
+              placeholder={undefined}
+              onResize={undefined}
+              onResizeCapture={undefined}
+              onPointerEnterCapture={undefined}
+              onPointerLeaveCapture={undefined}
             >
               Get Started Now
             </Typography>
             <Typography
               color="gray"
               className="font-normal text-gray-600"
+              placeholder={undefined}
+              onResize={undefined}
+              onResizeCapture={undefined}
+              onPointerEnterCapture={undefined}
+              onPointerLeaveCapture={undefined}
             >
               Sign in to connect with agricultural opportunities
             </Typography>
@@ -441,6 +452,11 @@ export default function LoginPage() {
             <Typography
               variant="small"
               className="text-gray-600"
+              placeholder={undefined}
+              onResize={undefined}
+              onResizeCapture={undefined}
+              onPointerEnterCapture={undefined}
+              onPointerLeaveCapture={undefined}
             >
               Dont have an account?{" "}
               <AlertDialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
@@ -505,5 +521,17 @@ export default function LoginPage() {
                         </div>
                       </motion.div>
     </div>
+  );
+}
+
+/**
+ * Main LoginPage component wrapped with Suspense boundary
+ * to handle useSearchParams SSR compatibility
+ */
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -150,7 +150,8 @@ export default function SellerChatPage() {
     joinRoom(chatRoomId)
 
     // Subscribe: handle incoming messages; replace local optimistic copy when it's my own message and avoid duplicates by id
-    const offNew = on('new_message', (msg: ChatMessage) => {
+    const offNew = on('new_message', (...args: unknown[]) => {
+      const msg = args[0] as ChatMessage;
       setMessages((prev) => {
         // Ignore if we already have this message by id
         if (prev.some((m) => m.id === msg.id)) return prev
@@ -178,7 +179,8 @@ export default function SellerChatPage() {
         .get(`/api/chat/messages?chatRoomId=${chatRoomId}`, { headers: { 'x-dev-user-id': effectiveDevUserId || '' } })
         .then((res) => setMessages((res.data.messages as ChatMessage[]).reverse()))
     })
-    const offRead = on('messages_read', ({ messageIds }: { messageIds: string[] }) => {
+    const offRead = on('messages_read', (...args: unknown[]) => {
+      const { messageIds } = args[0] as { messageIds: string[] };
       setMessages((prev) => prev.map((m) => (messageIds.includes(m.id) ? { ...m, isRead: true } : m)))
     })
     const offError = on('error_event', (err) => {

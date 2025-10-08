@@ -59,13 +59,14 @@ export default function BuyerChatPage() {
         const newId = roomRes.data?.id
         if (!cancelled && newId) {
           setChatRoomId(newId)
-          // Reflect in URL for shareable link
-          const url = new URL(window.location.href)
-          url.searchParams.set('chatRoomId', newId)
-          window.history.replaceState({}, '', url.toString())
+          // Reflect in URL for shareable link (client-side only)
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href)
+            url.searchParams.set('chatRoomId', newId)
+            window.history.replaceState({}, '', url.toString())
+          }
         }
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.error('Failed to auto-create chat room', err)
       }
     })()
@@ -78,7 +79,8 @@ export default function BuyerChatPage() {
     joinRoom(chatRoomId)
 
     // Subscribe: handle incoming messages; replace local optimistic copy when it's my own message and avoid duplicates by id
-    const offNew = on('new_message', (msg: ChatMessage) => {
+    const offNew = on('new_message', (...args: unknown[]) => {
+      const msg = args[0] as ChatMessage;
       setMessages((prev) => {
         // Ignore if we already have this message by id
         if (prev.some((m) => m.id === msg.id)) return prev
@@ -107,7 +109,8 @@ export default function BuyerChatPage() {
         .get(`/api/chat/messages?chatRoomId=${chatRoomId}`, { headers: { 'x-dev-user-id': devUserId || '' } })
         .then((res) => setMessages((res.data.messages as ChatMessage[]).reverse()))
     })
-    const offRead = on('messages_read', ({ messageIds }: { messageIds: string[] }) => {
+    const offRead = on('messages_read', (...args: unknown[]) => {
+      const { messageIds } = args[0] as { messageIds: string[] };
       setMessages((prev) => prev.map((m) => (messageIds.includes(m.id) ? { ...m, isRead: true } : m)))
     })
 

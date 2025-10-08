@@ -348,6 +348,8 @@ export default function LogisticsMyProfile() {
   useEffect(() => {
     (async () => {
       try {
+        // Only access localStorage on client side
+        if (typeof window === 'undefined') return;
         const user = getUserData();
         if (!user) {
           router.push("/sign-in");

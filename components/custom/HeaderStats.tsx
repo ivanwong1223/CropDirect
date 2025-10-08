@@ -9,6 +9,16 @@ interface ReportOrderItem {
   product?: { productTitle?: string | null } | null;
 }
 
+// Type definition for API order response
+interface ApiOrderResponse {
+  totalAmount?: number;
+  status?: string;
+  createdAt?: string;
+  product?: {
+    productTitle?: string | null;
+  } | null;
+}
+
 /**
  * Header component displaying dashboard statistics using real seller data
  * - Resolves current user's Agribusiness ID
@@ -37,7 +47,7 @@ export default function HeaderStats() {
         const ordersResp = await fetch(`/api/orders?${params.toString()}`);
         const ordersJson = await ordersResp.json();
         if (ordersResp.ok) {
-          const items: ReportOrderItem[] = (ordersJson?.data || []).map((o: any) => ({
+          const items: ReportOrderItem[] = (ordersJson?.data || []).map((o: ApiOrderResponse) => ({
             totalAmount: Number(o?.totalAmount || 0),
             status: String(o?.status || "unknown"),
             createdAt: String(o?.createdAt || new Date().toISOString()),

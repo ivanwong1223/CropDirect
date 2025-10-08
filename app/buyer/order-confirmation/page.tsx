@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -91,7 +91,7 @@ interface PaymentSession {
 }
 
 // Adds confirmation UI for buyer after Stripe session and formats numeric fields safely.
-export default function OrderConfirmationPage() {
+function OrderConfirmationForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
@@ -144,7 +144,7 @@ export default function OrderConfirmationPage() {
     };
 
     loadOrderConfirmation();
-  }, [searchParams]);
+  }, [searchParams, modalShown]);
 
   const handleDownloadReceipt = () => {
     // In a real app, this would generate and download a PDF receipt
@@ -693,6 +693,18 @@ export default function OrderConfirmationPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Main OrderConfirmationPage component wrapped with Suspense boundary
+ * to handle useSearchParams SSR compatibility
+ */
+export default function OrderConfirmationPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <OrderConfirmationForm />
+    </Suspense>
   );
 }
 

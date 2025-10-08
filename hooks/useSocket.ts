@@ -31,13 +31,12 @@ export function useSocket({ token, devUserId }: Options) {
     socket.on('disconnect', onDisconnect)
 
     // Helpful dev logs for diagnosing message send failures
-    const onErrorEvent = (payload: any) => {
-      // eslint-disable-next-line no-console
+    const onErrorEvent = (payload: unknown) => {
       console.error('[socket:error_event]', payload)
     }
-    const onConnectError = (err: any) => {
-      // eslint-disable-next-line no-console
-      console.error('[socket:connect_error]', err?.message || err)
+    const onConnectError = (err: Error | unknown) => {
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      console.error('[socket:connect_error]', errorMessage)
     }
     socket.on('error_event', onErrorEvent)
     socket.on('connect_error', onConnectError)
@@ -58,9 +57,17 @@ export function useSocket({ token, devUserId }: Options) {
     connected,
     socket: socketRef.current,
     joinRoom: (chatRoomId: string) => socketRef.current?.emit('join_room', { chatRoomId }),
-    sendMessage: (data: { chatRoomId?: string; buyerId?: string; sellerId?: string; content?: string; imageUrl?: string; imageMime?: string; metadata?: any }) => socketRef.current?.emit('send_message', data),
+    sendMessage: (data: { 
+      chatRoomId?: string; 
+      buyerId?: string; 
+      sellerId?: string; 
+      content?: string; 
+      imageUrl?: string; 
+      imageMime?: string; 
+      metadata?: Record<string, unknown> 
+    }) => socketRef.current?.emit('send_message', data),
     markRead: (data: { chatRoomId: string; messageIds: string[] }) => socketRef.current?.emit('message_read', data),
-    on: (event: string, handler: (...args: any[]) => void) => {
+    on: (event: string, handler: (...args: unknown[]) => void) => {
       socketRef.current?.on(event, handler)
       return () => socketRef.current?.off(event, handler)
     }

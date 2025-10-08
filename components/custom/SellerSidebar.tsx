@@ -73,7 +73,7 @@ export default function SellerSidebar({
     }
     console.log("The current item is: ", currentItem);
     console.log("The current user is: ", currentUserRole);
-  }, [pathname, currentUserRole]); // Only depend on pathname and currentUserRole, not on functions
+  }, [pathname, currentUserRole, getMenuItemByRoute, setActiveMenuItem]); // Include all dependencies
 
   /**
    * Handle menu item click navigation

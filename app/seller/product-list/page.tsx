@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +50,7 @@ interface ProductItem {
   };
 }
 
-export default function ProductList() {
+function ProductListForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
@@ -521,5 +521,17 @@ export default function ProductList() {
         kybStatus={kybStatus}
       />
     </div>
+  );
+}
+
+/**
+ * Main ProductList component wrapped with Suspense boundary
+ * to handle useSearchParams SSR compatibility
+ */
+export default function ProductList() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <ProductListForm />
+    </Suspense>
   );
 }

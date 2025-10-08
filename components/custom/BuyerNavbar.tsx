@@ -40,19 +40,19 @@ export default function BuyerNavbar() {
 
   // Pull buyer menu items from the global menu store
   const buyerSection = useMenuStore((s) => s.menuSections.find((sec) => sec.userRole === 'buyer'));
-  const buyerItems = buyerSection?.items ?? [];
+  const buyerItems = useMemo(() => buyerSection?.items ?? [], [buyerSection]);
 
   // Maintain required order for left and right sections
-  const leftOrder = ['category', 'marketplace', 'featured-seller', 'news-feed'];
-  const rightOrder = ['my-orders', 'buyer-profile'];
+  const leftOrder = useMemo(() => ['category', 'marketplace', 'featured-seller', 'news-feed'], []);
+  const rightOrder = useMemo(() => ['my-orders', 'buyer-profile'], []);
 
   const leftLinks = useMemo(() => leftOrder
     .map((id) => buyerItems.find((it) => it.id === id))
-    .filter(Boolean) as typeof buyerItems, [buyerItems]);
+    .filter(Boolean) as typeof buyerItems, [buyerItems, leftOrder]);
 
   const rightLinks = useMemo(() => rightOrder
     .map((id) => buyerItems.find((it) => it.id === id))
-    .filter(Boolean) as typeof buyerItems, [buyerItems]);
+    .filter(Boolean) as typeof buyerItems, [buyerItems, rightOrder]);
 
   // Current user basic data from local storage
   const userData = getUserData();

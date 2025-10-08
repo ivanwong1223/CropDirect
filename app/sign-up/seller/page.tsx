@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import {
   Typography,
   IconButton,
@@ -28,7 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { User, Building, Hash, Briefcase, Leaf, MapPin, Globe } from "lucide-react";
 import { getCountries, getStatesByCountry } from "@/lib/countries";
 
-export default function SellerSignUpPage() {
+function SellerSignUpForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -479,5 +479,13 @@ export default function SellerSignUpPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function SellerSignUpPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <SellerSignUpForm />
+    </Suspense>
   );
 }

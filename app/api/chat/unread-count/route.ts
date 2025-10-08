@@ -30,7 +30,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Seller not found' }, { status: 404 })
     }
 
-    const where: any = {
+    const where: {
+      chatRoom: { sellerId: string };
+      senderId: { not: string };
+      isRead: boolean;
+      createdAt?: { gt: Date };
+    } = {
       chatRoom: { sellerId },
       senderId: { not: seller.userId },
       isRead: false,

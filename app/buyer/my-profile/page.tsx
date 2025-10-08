@@ -147,6 +147,8 @@ export default function BuyerProfilePage() {
     if (!buyer) return;
     try {
       setEditSaving(true);
+      // Only access localStorage on client side
+      if (typeof window === 'undefined') return;
       const user = getUserData();
       const res = await fetch('/api/user/businessBuyer/update', {
         method: 'PUT',
@@ -185,6 +187,8 @@ export default function BuyerProfilePage() {
       try {
         setLoading(true);
         setError(null);
+        // Only access localStorage on client side
+        if (typeof window === 'undefined') return;
         const user = getUserData();
         if (!user?.id) {
           setError("Please sign in to view your profile.");
@@ -329,6 +333,8 @@ export default function BuyerProfilePage() {
       setClaimDialogOpen(true);
 
       // Refresh buyer profile
+      // Only access localStorage on client side
+      if (typeof window === 'undefined') return;
       const user = getUserData();
       if (user?.id) {
         const p = await fetch(`/api/user/businessBuyer?userId=${user.id}`);

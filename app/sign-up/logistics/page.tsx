@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Typography, IconButton } from "@material-tailwind/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,7 @@ const fadeIn = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
 };
 
-export default function BuyerSignUpPage() {
+function LogisticsSignUpForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -64,7 +64,7 @@ export default function BuyerSignUpPage() {
       if (needsOnboarding) {
         setIsGoogleConnected(true);
         if (user?.email) {
-          setFormData(prev => ({ ...prev, email: user.email }));
+          setFormData(prev => ({ ...prev, email: user.email! }));
         }
         router.replace('/sign-up/logistics');
       } else if (user) {
@@ -336,5 +336,13 @@ export default function BuyerSignUpPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function BuyerSignUpPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <LogisticsSignUpForm />
+    </Suspense>
   );
 }

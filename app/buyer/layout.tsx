@@ -98,6 +98,8 @@ export default function BuyerLayout({
     const fromQuery = url.get('devUserId') || undefined;
     if (fromQuery) return fromQuery;
     try {
+      // Only access localStorage on client side
+      if (typeof window === 'undefined') return undefined;
       return getUserData()?.id;
     } catch {
       return undefined;
@@ -156,7 +158,8 @@ export default function BuyerLayout({
     joinRoom(selectedRoomId);
 
     // Subscribe: handle incoming messages; replace local optimistic copy when it's my own message and avoid duplicates by id
-    const offNew = on('new_message', (msg: ChatMessage) => {
+    const offNew = on('new_message', (...args: unknown[]) => {
+      const msg = args[0] as ChatMessage;
       // Update unread badge if widget closed or message for a different room
       if (!chatOpen || msg.chatRoomId !== selectedRoomId) {
         setUnreadCount((n) => n + 1);
@@ -190,7 +193,8 @@ export default function BuyerLayout({
         .then((res) => setMessages((res.data.messages as ChatMessage[]).reverse()));
     });
 
-    const offRead = on('messages_read', ({ messageIds }: { messageIds: string[] }) => {
+    const offRead = on('messages_read', (...args: unknown[]) => {
+      const { messageIds } = args[0] as { messageIds: string[] };
       setMessages((prev) => prev.map((m) => (messageIds.includes(m.id) ? { ...m, isRead: true } : m)));
     });
 
@@ -444,7 +448,6 @@ export default function BuyerLayout({
         try {
           sendMessage({ chatRoomId: id, content: message });
         } catch (err) {
-          // eslint-disable-next-line no-console
           console.error('Failed to send chat message', err);
         }
       }

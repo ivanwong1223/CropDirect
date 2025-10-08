@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -104,7 +104,7 @@ function useDebounced<T>(value: T, delay = 350) {
  * Pulls the current seller (agribusiness) profile, then fetches orders scoped to that seller.
  * Provides navigation to per-order details.
  */
-export default function SellerOrdersPage() {
+function SellerOrdersForm() {
   const searchParams = useSearchParams();
   const [seller, setSeller] = useState<AgribusinessProfile | null>(null);
   const [orders, setOrders] = useState<OrderItem[]>([]);
@@ -458,5 +458,17 @@ export default function SellerOrdersPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+/**
+ * Main SellerOrdersPage component wrapped with Suspense boundary
+ * to handle useSearchParams SSR compatibility
+ */
+export default function SellerOrdersPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <SellerOrdersForm />
+    </Suspense>
   );
 }

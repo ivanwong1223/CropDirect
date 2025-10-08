@@ -1,6 +1,17 @@
 import React from "react";
-import { Chart } from "chart.js/auto";
+import { Chart, ChartConfiguration } from "chart.js/auto";
 import { getUserData } from "@/lib/localStorage";
+
+// Type definitions for order data
+interface OrderData {
+  status: string;
+  createdAt: string;
+}
+
+interface ApiOrderResponse {
+  status?: string;
+  createdAt?: string;
+}
 
 /**
  * Bar chart component for displaying orders count over time using real data
@@ -30,7 +41,7 @@ export default function CardBarChart() {
         const ordersJson = await ordersResp.json();
         if (!ordersResp.ok) return;
 
-        const orders: Array<{ status: string; createdAt: string }> = (ordersJson?.data || []).map((o: any) => ({
+        const orders: OrderData[] = (ordersJson?.data || []).map((o: ApiOrderResponse) => ({
           status: String(o?.status || "unknown"),
           createdAt: String(o?.createdAt || new Date().toISOString()),
         }));
@@ -125,7 +136,7 @@ export default function CardBarChart() {
 
         const ctx = document.getElementById("bar-chart") as HTMLCanvasElement;
         if (ctx) {
-          chartInstance = new Chart(ctx, config as any);
+          chartInstance = new Chart(ctx, config as ChartConfiguration);
         }
       } catch (e) {
         console.error("CardBarChart load error", e);

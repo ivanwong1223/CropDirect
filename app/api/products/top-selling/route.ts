@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@/app/generated/prisma';
+import { PrismaClient, ProductStatus } from '@/app/generated/prisma';
 
 const prisma = new PrismaClient();
 
@@ -13,8 +13,11 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '5');
     const category = searchParams.get('category');
 
-    const whereClause: any = {
-      status: 'ACTIVE'
+    const whereClause: {
+      status: ProductStatus;
+      cropCategory?: string;
+    } = {
+      status: ProductStatus.ACTIVE
     };
     
     if (category) {

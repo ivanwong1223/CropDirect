@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { getUserData } from '@/lib/localStorage';
 import { Button } from "@/components/ui/button"
 
@@ -103,7 +104,6 @@ export default function LogisticsOrderDetailsPage() {
 
   useEffect(() => {
     fetchLogisticsPartnerId();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -281,9 +281,11 @@ export default function LogisticsOrderDetailsPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {details.product.productImages.map((image, index) => (
                     <div key={index} className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                      <img
+                      <Image
                         src={image}
                         alt={`Product ${index + 1}`}
+                        width={300}
+                        height={300}
                         className="w-full h-full object-cover hover:scale-105 transition-transform duration-200 cursor-pointer"
                         onClick={() => window.open(image, '_blank')}
                       />
@@ -359,7 +361,7 @@ export default function LogisticsOrderDetailsPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="flex items-start gap-4">
                   {details.seller.businessImage ? (
-                    <img src={details.seller.businessImage} alt="seller" className="w-16 h-16 rounded-full object-cover flex-shrink-0" />
+                    <Image src={details.seller.businessImage} alt="seller" width={64} height={64} className="w-16 h-16 rounded-full object-cover flex-shrink-0" />
                   ) : (
                     <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
                       <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -386,7 +388,7 @@ export default function LogisticsOrderDetailsPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="flex items-start gap-4">
                   {details.buyer.businessImage ? (
-                    <img src={details.buyer.businessImage} alt="buyer" className="w-16 h-16 rounded-full object-cover flex-shrink-0" />
+                    <Image src={details.buyer.businessImage} alt="buyer" width={64} height={64} className="w-16 h-16 rounded-full object-cover flex-shrink-0" />
                   ) : (
                     <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
                       <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

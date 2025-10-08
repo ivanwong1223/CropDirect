@@ -11,6 +11,10 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  // Ignore build and generated directories
+  {
+    ignores: [".next/**", "dist/**", "build/**", "**/generated/**"],
+  },
   // Custom rules override
   {
     files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx"],
@@ -18,6 +22,13 @@ const eslintConfig = [
       // Turn off both ESLint and TypeScript unused variable rules
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": "off",
+    },
+  },
+  // Exclude generated Prisma files from require import restrictions
+  {
+    files: ["**/generated/prisma/**/*.js"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
 ];

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 
-export function json(data: any, init?: number | ResponseInit) {
+export function json(data: unknown, init?: ResponseInit) {
   return NextResponse.json(data, init)
 }
 

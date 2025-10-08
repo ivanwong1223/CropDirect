@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -97,7 +97,7 @@ interface UserProfile {
   };
 }
 
-export default function Profile() {
+function ProfileForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -107,6 +107,10 @@ export default function Profile() {
   const [success, setSuccess] = useState<string>("");
   const [availableStates, setAvailableStates] = useState<Array<{code: string, name: string}>>([]);
   const [imagePreview, setImagePreview] = useState<string>("");
+  // Type definition for notification elements
+  type NotificationElement = React.ReactElement & {
+    key: string;
+  };
   const [notifications, setNotifications] = useState<React.ReactNode[]>([]);
 
   // Form data state
@@ -153,7 +157,7 @@ export default function Profile() {
       setNotifications((prev) => {
         const existingNotification = prev.find(n => 
           n && typeof n === 'object' && 'key' in n && 
-          typeof (n as any).key === 'string' && (n as any).key.startsWith('kyb-success-')
+          typeof (n as NotificationElement).key === 'string' && (n as NotificationElement).key.startsWith('kyb-success-')
         );
         if (existingNotification) return prev;
         return [
@@ -191,7 +195,7 @@ export default function Profile() {
         // Prevent duplicate notification (e.g., React Strict Mode double effect)
         const existingNotification = prev.find(n => 
           n && typeof n === 'object' && 'key' in n && 
-          typeof (n as any).key === 'string' && (n as any).key.startsWith('bank-setup-')
+          typeof (n as NotificationElement).key === 'string' && (n as NotificationElement).key.startsWith('bank-setup-')
         );
         if (existingNotification) {
           return prev;
@@ -1006,5 +1010,17 @@ export default function Profile() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Main Profile component wrapped with Suspense boundary
+ * to handle useSearchParams SSR compatibility
+ */
+export default function Profile() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <ProfileForm />
+    </Suspense>
   );
 }
