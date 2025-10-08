@@ -102,12 +102,12 @@ const menuData: MenuSection[] = [
         route: '/buyer/news-feed',
         icon: 'Newspaper'
       },
-      {
-        id: 'featured-seller',
-        name: 'Featured Seller',
-        route: '/buyer/featured-seller',
-        icon: 'Users'
-      },
+      // {
+      //   id: 'featured-seller',
+      //   name: 'Featured Seller',
+      //   route: '/buyer/featured-seller',
+      //   icon: 'Users'
+      // },
       {
         id: 'my-orders',
         name: 'My Orders',

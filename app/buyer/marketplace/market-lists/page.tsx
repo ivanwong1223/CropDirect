@@ -72,6 +72,7 @@ interface FilterState {
 export default function MarketListsPage() {
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get('search') || '';
+  const initialCategory = searchParams.get('category') || '';
   
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [searchInput, setSearchInput] = useState(initialSearch);
@@ -92,7 +93,7 @@ export default function MarketListsPage() {
   });
   const [filters, setFilters] = useState<FilterState>({
     location: [],
-    category: [],
+    category: initialCategory ? [initialCategory] : [],
     priceRange: { min: "", max: "" },
     services: []
   });
@@ -125,15 +126,19 @@ export default function MarketListsPage() {
       }
       
       if (filters.location.length > 0) {
-        // Convert filter location to API format
-        const locationMap: { [key: string]: string } = {
-          'Local': 'local',
-          'West Malaysia': 'west-malaysia',
-          'East Malaysia': 'east-malaysia',
-          'Overseas': 'overseas'
-        };
-        const apiLocation = filters.location.map(loc => locationMap[loc] || loc.toLowerCase()).join(',');
-        params.append('location', apiLocation);
+        // Check if 'Local' OR 'West Malaysia' is selected - if either is selected, show all products
+        const hasLocalOrWestMalaysia = filters.location.includes('Local') || filters.location.includes('West Malaysia');
+        
+        if (!hasLocalOrWestMalaysia) {
+          // Only apply location filter if neither 'Local' nor 'West Malaysia' is selected
+          // Convert filter location to API format
+          const locationMap: { [key: string]: string } = {
+            'East Malaysia': 'east-malaysia',
+            'Overseas': 'overseas'
+          };
+          const apiLocation = filters.location.map(loc => locationMap[loc] || loc.toLowerCase()).join(',');
+          params.append('location', apiLocation);
+        }
       }
       
       if (filters.category.length > 0) {

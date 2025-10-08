@@ -4,9 +4,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Pencil } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getUserData } from "@/lib/localStorage";
+import ProfilePictureSection from "@/components/custom/ProfilePictureSection";
 
 // Types for API data
 interface BuyerUser {
@@ -100,6 +104,80 @@ export default function BuyerProfilePage() {
   const [claiming, setClaiming] = useState<boolean>(false);
   const [claimResult, setClaimResult] = useState<{ success: boolean; message: string } | null>(null);
   const [claimDialogOpen, setClaimDialogOpen] = useState<boolean>(false);
+  // Edit state for Buyer profile
+  const [editing, setEditing] = useState<boolean>(false);
+  const [editSaving, setEditSaving] = useState<boolean>(false);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [editForm, setEditForm] = useState<{
+    companyName: string;
+    companyType: string;
+    companyAddress: string;
+    contactNo: string;
+    businessImage: string;
+  }>({ companyName: "", companyType: "", companyAddress: "", contactNo: "", businessImage: "" });
+
+  function startEditing() {
+    if (!buyer) return;
+    setEditForm({
+      companyName: buyer.companyName || "",
+      companyType: buyer.companyType || "",
+      companyAddress: buyer.companyAddress || "",
+      contactNo: buyer.contactNo || "",
+      businessImage: buyer.businessImage || "",
+    });
+    setImagePreview(buyer.businessImage || "");
+    setEditing(true);
+  }
+
+  // Handle image upload similar to seller profile
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setImagePreview(result);
+        setEditForm(prev => ({ ...prev, businessImage: result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  async function saveEdits() {
+    if (!buyer) return;
+    try {
+      setEditSaving(true);
+      const user = getUserData();
+      const res = await fetch('/api/user/businessBuyer/update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.id,
+          companyName: editForm.companyName,
+          companyType: editForm.companyType,
+          companyAddress: editForm.companyAddress,
+          contactNo: editForm.contactNo,
+          businessImage: editForm.businessImage,
+        })
+      });
+      const json = await res.json();
+      if (!json?.success) {
+        throw new Error(json?.error || 'Failed to update buyer profile');
+      }
+      // Refresh buyer profile
+      const refreshed = await fetch(`/api/user/businessBuyer?userId=${user?.id}`);
+      const refreshedJson = await refreshed.json();
+      if (refreshedJson?.success && refreshedJson?.data) {
+        setBuyer(refreshedJson.data as BuyerProfile);
+      }
+      setEditing(false);
+    } catch (e) {
+      console.error(e);
+      alert('Unable to save changes. Please try again.');
+    } finally {
+      setEditSaving(false);
+    }
+  }
 
   // Load buyer profile on mount
   useEffect(() => {
@@ -296,34 +374,74 @@ export default function BuyerProfilePage() {
       {/* Profile and Loyalty Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between">
             <CardTitle>Buyer Information</CardTitle>
+            <Button className='cursor-pointer' variant="ghost" size="icon" aria-label="Edit profile" onClick={startEditing}>
+              <Pencil className="h-4 w-4" />
+            </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
-                {buyer.businessImage ? (
-                  <Image src={buyer.businessImage} alt="Business" width={64} height={64} className="object-cover w-full h-full" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">NO IMG</div>
-                )}
+            {editing ? (
+              <div className="space-y-6">
+                {/* Profile Picture Section - Using Custom Component */}
+                <ProfilePictureSection
+                  businessName={editForm.companyName || buyer.companyName || "Business"}
+                  businessImage={editForm.businessImage}
+                  onImageUpload={handleImageUpload}
+                  imagePreview={imagePreview}
+                />
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="companyName">Company Name</Label>
+                    <Input id="companyName" value={editForm.companyName} onChange={(e) => setEditForm(f => ({ ...f, companyName: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="companyType">Company Type</Label>
+                    <Input id="companyType" value={editForm.companyType} onChange={(e) => setEditForm(f => ({ ...f, companyType: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contactNo">Contact Number</Label>
+                    <Input id="contactNo" value={editForm.contactNo} onChange={(e) => setEditForm(f => ({ ...f, contactNo: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="companyAddress">Company Address</Label>
+                    <Input id="companyAddress" value={editForm.companyAddress} onChange={(e) => setEditForm(f => ({ ...f, companyAddress: e.target.value }))} />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={saveEdits} disabled={editSaving}>{editSaving ? 'Saving...' : 'Save'}</Button>
+                  <Button variant="outline" onClick={() => setEditing(false)} disabled={editSaving}>Cancel</Button>
+                </div>
               </div>
-              <div>
-                <div className="text-lg font-medium">{buyer.companyName || buyer.user?.name || 'Unnamed Company'}</div>
-                <div className="text-sm text-gray-600">{buyer.user?.email}</div>
-                <div className="text-sm text-gray-600">{buyer.companyType}</div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
+                    {buyer.businessImage ? (
+                      <Image src={buyer.businessImage} alt="Business" width={64} height={64} className="object-cover w-full h-full" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">NO IMG</div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-lg font-medium">{buyer.companyName || buyer.user?.name || 'Unnamed Company'}</div>
+                    <div className="text-sm text-gray-600">{buyer.user?.email}</div>
+                    <div className="text-sm text-gray-600">{buyer.companyType}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm text-gray-500">Contact Number</div>
+                    <div className="font-medium">{buyer.contactNo || '-'}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Company Address</div>
+                    <div className="font-medium">{buyer.companyAddress || '-'}</div>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <div className="text-sm text-gray-500">Contact Number</div>
-                <div className="font-medium">{buyer.contactNo || '-'}</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-500">Company Address</div>
-                <div className="font-medium">{buyer.companyAddress || '-'}</div>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -462,7 +580,7 @@ export default function BuyerProfilePage() {
                       </TableCell>
                       <TableCell>
                         {p.isRefunded && typeof p.refundAmount === 'number' ? (
-                          <span className="text-red-600">- {(p.order?.currency || p.currency || 'RM')} {Number(p.refundAmount).toFixed(2)}</span>
+                          <span className="text-green-600">+ {(p.order?.currency || p.currency || 'RM')} {Number(p.refundAmount).toFixed(2)}</span>
                         ) : (
                           '-'
                         )}

@@ -209,13 +209,52 @@ export default function OrderConfirmationPage() {
                 <TypingAnimation>Order Confirmed!</TypingAnimation>
               )}
             </h1>
-            <p className="text-gray-600">
+            <div className="text-gray-600">
               {!isPaymentSuccessful 
                 ? 'We are processing your payment. Please wait for confirmation.'
                 : isBidOrder && isOrderPending
                 ? 'Waiting for seller approval. Your payment will be automatically refunded if your bid is not accepted.'
-                : 'Thank you for your purchase. Your order has been successfully placed.'}
-            </p>
+                : (
+                  <div>
+                    <p className="mb-4">
+                      {typeof paymentSession?.loyalty?.pointsEarned === 'number' && paymentSession.loyalty.pointsEarned > 0
+                        ? `Congratulations! 🎉 You've earned ${paymentSession.loyalty.pointsEarned} loyalty points on this order.`
+                        : 'Your payment was successful and your order has been confirmed.'}
+                    </p>
+                    
+                    {/* Loyalty details if available */}
+                    {paymentSession?.loyalty && (
+                      <div className="space-y-2 text-sm bg-gray-50 p-4 rounded-lg">
+                        {typeof paymentSession.loyalty.redeemedPoints === 'number' && paymentSession.loyalty.discountRM ? (
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Redeemed</span>
+                            <span className="font-medium">
+                              {paymentSession.loyalty.redeemedPoints} pts → -{order.product.currency} {Number(paymentSession.loyalty.discountRM).toFixed(2)}
+                            </span>
+                          </div>
+                        ) : null}
+                        {typeof paymentSession.loyalty.pointsEarned === 'number' && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Earned</span>
+                            <span className="font-medium">{paymentSession.loyalty.pointsEarned} pts</span>
+                          </div>
+                        )}
+                        {typeof paymentSession.loyalty.balanceAfter === 'number' && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">New Balance</span>
+                            <span className="font-medium">{paymentSession.loyalty.balanceAfter} pts</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* <div className="mt-4 flex gap-2 justify-center">
+                      <Button variant="outline" onClick={() => location.assign('/buyer/marketplace')}>Continue Shopping</Button>
+                      <Button onClick={() => location.assign('/buyer/my-orders')}>View My Orders</Button>
+                    </div> */}
+                  </div>
+                )}
+            </div>
             <div className="mt-4">
               <Badge 
                 variant={!isPaymentSuccessful ? 'secondary' : isBidOrder && isOrderPending ? 'outline' : 'default'} 
@@ -227,51 +266,6 @@ export default function OrderConfirmationPage() {
           </div>
         </div>
       </motion.div>
-
-      {/* Congratulations Dialog - opens after successful payment */}
-      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Congratulations! 🎉</DialogTitle>
-            <DialogDescription>
-              {typeof paymentSession?.loyalty?.pointsEarned === 'number' && paymentSession.loyalty.pointsEarned > 0
-                ? `You've earned ${paymentSession.loyalty.pointsEarned} loyalty points on this order.`
-                : 'Your payment was successful and your order has been confirmed.'}
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* Loyalty details if available */}
-          {paymentSession?.loyalty && (
-            <div className="space-y-2 text-sm">
-              {typeof paymentSession.loyalty.redeemedPoints === 'number' && paymentSession.loyalty.discountRM ? (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Redeemed</span>
-                  <span className="font-medium">
-                    {paymentSession.loyalty.redeemedPoints} pts → -{order.product.currency} {Number(paymentSession.loyalty.discountRM).toFixed(2)}
-                  </span>
-                </div>
-              ) : null}
-              {typeof paymentSession.loyalty.pointsEarned === 'number' && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Earned</span>
-                  <span className="font-medium">{paymentSession.loyalty.pointsEarned} pts</span>
-                </div>
-              )}
-              {typeof paymentSession.loyalty.balanceAfter === 'number' && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">New Balance</span>
-                  <span className="font-medium">{paymentSession.loyalty.balanceAfter} pts</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="mt-4 flex gap-2 justify-end">
-            <Button variant="outline" onClick={() => setShowSuccessModal(false)}>Close</Button>
-            <Button onClick={() => { setShowSuccessModal(false); location.assign('/buyer/my-orders'); }}>View My Orders</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Header Section - Only show if modal hasn't been shown */}
       {!modalShown && (
@@ -298,13 +292,52 @@ export default function OrderConfirmationPage() {
                   ? 'Bid Submitted!'
                   : 'Order Confirmed!'}
               </h1>
-              <p className="text-gray-600">
+              <div className="text-gray-600">
                 {!isPaymentSuccessful 
                   ? 'We are processing your payment. Please wait for confirmation.'
                   : isBidOrder && isOrderPending
                   ? 'Your bid has been submitted and payment processed. Waiting for seller approval.'
-                  : 'Thank you for your purchase. Your order has been successfully placed.'}
-              </p>
+                  : (
+                    <div>
+                      <p className="mb-4">
+                        {typeof paymentSession?.loyalty?.pointsEarned === 'number' && paymentSession.loyalty.pointsEarned > 0
+                          ? `Congratulations! 🎉 You've earned ${paymentSession.loyalty.pointsEarned} loyalty points on this order.`
+                          : 'Your payment was successful and your order has been confirmed.'}
+                      </p>
+                      
+                      {/* Loyalty details if available */}
+                      {paymentSession?.loyalty && (
+                        <div className="space-y-2 text-sm bg-gray-50 p-4 rounded-lg">
+                          {typeof paymentSession.loyalty.redeemedPoints === 'number' && paymentSession.loyalty.discountRM ? (
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600">Redeemed</span>
+                              <span className="font-medium">
+                                {paymentSession.loyalty.redeemedPoints} pts → -{order.product.currency} {Number(paymentSession.loyalty.discountRM).toFixed(2)}
+                              </span>
+                            </div>
+                          ) : null}
+                          {typeof paymentSession.loyalty.pointsEarned === 'number' && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600">Earned</span>
+                              <span className="font-medium">{paymentSession.loyalty.pointsEarned} pts</span>
+                            </div>
+                          )}
+                          {typeof paymentSession.loyalty.balanceAfter === 'number' && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600">New Balance</span>
+                              <span className="font-medium">{paymentSession.loyalty.balanceAfter} pts</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* <div className="mt-4 flex gap-2 justify-center">
+                        <Button variant="outline" onClick={() => location.assign('/buyer/marketplace')}>Continue Shopping</Button>
+                        <Button onClick={() => location.assign('/buyer/my-orders')}>View My Orders</Button>
+                      </div> */}
+                    </div>
+                  )}
+              </div>
               <div className="mt-4">
                 <Badge 
                   variant={!isPaymentSuccessful ? 'secondary' : isBidOrder && isOrderPending ? 'outline' : 'default'} 

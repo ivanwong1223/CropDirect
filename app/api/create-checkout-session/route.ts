@@ -159,6 +159,7 @@ export async function POST(request: NextRequest) {
         currency: String(currency),
         // buyer info
         deliveryAddress: buyerInfo.deliveryAddress || '',
+        buyerPhone: buyerInfo.phone || '',
         // shipping
         estimatedDeliveryTime: shippingCalculation?.deliveryTime || '',
         shippingDistance: shippingCalculation?.distance !== undefined && shippingCalculation?.distance !== null ? String(shippingCalculation.distance) : '',
@@ -420,6 +421,17 @@ export async function GET(request: NextRequest) {
             }
           }
         });
+
+        // Update buyer's BusinessBuyer contactNo with their phone number if provided
+        const buyerPhone = md.buyerPhone as string | undefined;
+        if (buyerPhone && buyerPhone.trim() && md.buyerId) {
+          await tx.businessBuyer.update({
+            where: { id: md.buyerId as string },
+            data: {
+              contactNo: buyerPhone.trim()
+            }
+          });
+        }
 
         // Create sales transaction record for receipt/invoice tracking (whenever payment is successful)
         // This includes both regular orders and bid orders - refunds will be handled separately if bids are rejected

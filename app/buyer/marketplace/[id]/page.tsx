@@ -178,7 +178,58 @@ export default function ProductDetailPage() {
   };
 
   const handleRequestQuotation = () => {
-    toast.success('Quotation request sent to seller');
+    if (!product) return;
+    const user = getUserData();
+    const buyerUserId = user?.id;
+    const sellerId = product.agribusiness?.id;
+
+    if (!buyerUserId) {
+      toast.error('Please sign in to request a quote');
+      router.push('/sign-in');
+      return;
+    }
+    if (!sellerId) {
+      toast.error('Seller information is unavailable');
+      return;
+    }
+
+    const qtyNum = typeof quantity === 'string' ? parseInt(quantity) || 1 : quantity;
+    const firstImage = product.productImages?.[0] || null;
+
+    const message = `Request for Quotation\n\nProduct Name: ${product.productTitle}\nProduct Category: ${product.cropCategory}\nListed Price: ${product.currency} ${formatPrice(product.pricing)}\nRequested Quantity: ${qtyNum} ${product.unitOfMeasurement}\n\nKindly provide your quotation including total cost, delivery charges, and estimated delivery time.\n— Sent via CropDirect Request Quote feature`;
+
+    // Open chat and ensure/select room, also set product context
+    window.dispatchEvent(new CustomEvent('buyer-chat:open', {
+      detail: {
+        sellerId,
+        product: {
+          id: product.id,
+          title: product.productTitle,
+          currency: product.currency,
+          price: product.pricing,
+          thumbnail: firstImage,
+          quantity: qtyNum,
+        },
+      },
+    }));
+
+    // Programmatically send the quotation message via chat
+    window.dispatchEvent(new CustomEvent('buyer-chat:send', {
+      detail: {
+        sellerId,
+        message,
+        product: {
+          id: product.id,
+          title: product.productTitle,
+          currency: product.currency,
+          price: product.pricing,
+          thumbnail: firstImage,
+          quantity: qtyNum,
+        },
+      },
+    }));
+
+    toast.success('Quotation request sent via chat');
   };
 
   const handlePlaceBid = () => {

@@ -74,7 +74,7 @@ export default function ProductCard({ product, onViewDetails }: ProductCardProps
               variant="secondary"
               className="text-xs bg-green-100 text-green-800 hover:bg-green-200"
             >
-              {product.shippingMethod}
+              {product.shippingMethod.charAt(0).toUpperCase() + product.shippingMethod.slice(1)}
             </Badge>
           )}
         </div>
@@ -94,7 +94,7 @@ export default function ProductCard({ product, onViewDetails }: ProductCardProps
         {/* Category */}
         <div className="flex items-center gap-1 text-sm text-gray-500">
           <Package className="w-4 h-4" />
-          <span>{product.cropCategory}</span>
+          <span>{product.cropCategory.charAt(0).toUpperCase() + product.cropCategory.slice(1)}</span>
         </div>
         
         {/* Price */}

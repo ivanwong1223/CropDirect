@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -111,6 +111,7 @@ export default function SellerOrdersPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<React.ReactNode[]>([]);
+  const processedNotifications = useRef<Set<string>>(new Set());
 
   // Filters
   const [status, setStatus] = useState<string>("all");
@@ -243,8 +244,15 @@ export default function SellerOrdersPage() {
     const bidAction = searchParams.get('bidAction');
     const orderId = searchParams.get('orderId');
     
+    // Create a unique key for this notification
+    const notificationKey = `${bidAction || 'status'}-${orderId}-${statusUpdated}`;
+    
     // Only show notifications for bid actions or status updates from order details page
-    if ((bidAction || statusUpdated === 'true') && orderId) {
+    // and only if we haven't already processed this notification
+    if ((bidAction || statusUpdated === 'true') && orderId && !processedNotifications.current.has(notificationKey)) {
+      // Mark this notification as processed
+      processedNotifications.current.add(notificationKey);
+      
       // Show success notification
       setNotifications((prev) => {
         const message = bidAction ? 

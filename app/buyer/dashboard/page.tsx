@@ -60,6 +60,27 @@ export default function BuyerDashboard() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadingNews, setLoadingNews] = useState(true);
 
+  // Function to map dashboard category display names to database crop categories
+  const getCategoryMapping = (displayCategory: string): string => {
+    const categoryMap: { [key: string]: string } = {
+      '🥬Vegetables': 'Vegetables',
+      '🌾Grains': 'grains, rice',
+      '🍎Fruits': 'fruits',
+      '☕Specialty Coffee': 'specialty coffee',
+      '🥜Nuts & Seeds': 'Nuts & Seeds',
+      '🌾Barley': 'barley',
+      '🌽Cereals': 'corn, cereals'
+    };
+    return categoryMap[displayCategory] || displayCategory.replace(/^[^\w]+/, ''); // Remove emoji if no mapping found
+  };
+  
+  // Function to handle category navigation
+  const handleCategoryClick = (category: string) => {
+    const mappedCategory = getCategoryMapping(category);
+    const encodedCategory = encodeURIComponent(mappedCategory);
+    window.location.href = `/buyer/marketplace/market-lists?category=${encodedCategory}`;
+  };
+
   // Fetch latest active products
   useEffect(() => {
     let cancelled = false;
@@ -128,9 +149,10 @@ export default function BuyerDashboard() {
                 </Link>
               </div>
               <div className="mt-8 flex flex-wrap gap-3">
-                {['🥬Vegetables', '🌾Grains', '🍎Fruits', '☕Specialty Coffee', '🥜Nuts & Seeds', '🐟Fishery', '🌽Cereals'].map((category) => (
+                {['🥬Vegetables', '🌾Grains', '🍎Fruits', '☕Specialty Coffee', '🥜Nuts & Seeds', '🌾Barley', '🌽Cereals'].map((category) => (
                   <div
                     key={category}
+                    onClick={() => handleCategoryClick(category)}
                     className={cn(
                       "group rounded-full border border-black/5 bg-neutral-100 text-sm text-white transition-all ease-in hover:cursor-pointer hover:bg-neutral-200 dark:border-white/5 dark:bg-neutral-900 dark:hover:bg-neutral-800",
                     )}

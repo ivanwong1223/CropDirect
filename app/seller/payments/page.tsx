@@ -272,8 +272,15 @@ export default function PaymentsPage() {
                       </Badge>
                     </td>
                     <td className="py-4 px-4">
-                      <div className="font-semibold text-green-600 dark:text-green-400">
-                        {formatCurrency(transaction.amountPaid, transaction.currency)}
+                      <div className={`font-semibold ${
+                        transaction.isRefunded 
+                          ? "text-red-600 dark:text-red-400" 
+                          : "text-green-600 dark:text-green-400"
+                      }`}>
+                        {transaction.isRefunded ? "-" : ""}{formatCurrency(transaction.amountPaid, transaction.currency)}
+                        {transaction.isRefunded && (
+                          <span className="text-xs ml-1 text-red-500">(Refunded)</span>
+                        )}
                       </div>
                     </td>
                     <td className="py-4 px-4">
@@ -413,8 +420,15 @@ export default function PaymentsPage() {
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Amount Paid
                   </label>
-                  <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                    {formatCurrency(selectedTransaction.amountPaid, selectedTransaction.currency)}
+                  <div className={`text-lg font-semibold ${
+                    selectedTransaction.isRefunded 
+                      ? "text-red-600 dark:text-red-400" 
+                      : "text-green-600 dark:text-green-400"
+                  }`}>
+                    {selectedTransaction.isRefunded ? "-" : ""}{formatCurrency(selectedTransaction.amountPaid, selectedTransaction.currency)}
+                    {selectedTransaction.isRefunded && (
+                      <span className="text-sm ml-2 text-red-500">(Refunded)</span>
+                    )}
                   </div>
                 </div>
                 

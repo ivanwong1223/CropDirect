@@ -415,6 +415,46 @@ export default function BuyerLayout({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [devUserId, rooms]);
 
+  // Listen for a custom event to open chat and send a message to a seller
+  useEffect(() => {
+    const handleSend = async (evt: Event) => {
+      const e = evt as CustomEvent<{ sellerId: string; message: string; product?: { id: string; title: string; currency: string; price: number | string; thumbnail?: string | null; quantity?: number } }>;
+      const sellerId = e?.detail?.sellerId;
+      const message = e?.detail?.message?.trim();
+      const product = e?.detail?.product;
+      if (!sellerId || !message) return;
+      setChatOpen(true);
+      const id = await ensureRoomForSeller(sellerId, product?.id);
+      if (id) {
+        setSelectedRoomId(id);
+        setUnreadCount(0);
+        if (product) {
+          setRoomProductContext((prev) => ({
+            ...prev,
+            [id]: {
+              productId: product.id,
+              title: product.title,
+              currency: product.currency,
+              price: product.price,
+              thumbnail: product.thumbnail ?? null,
+              quantity: product.quantity ? Number(product.quantity) : undefined,
+            },
+          }));
+        }
+        try {
+          sendMessage({ chatRoomId: id, content: message });
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to send chat message', err);
+        }
+      }
+    };
+
+    window.addEventListener('buyer-chat:send', handleSend as EventListener);
+    return () => window.removeEventListener('buyer-chat:send', handleSend as EventListener);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [devUserId, rooms]);
+
   // UI helpers
   const toggleChat = () => setChatOpen((o) => !o);
   const openRoom = (roomId: string) => {
@@ -589,18 +629,25 @@ export default function BuyerLayout({
                       </div>
                     )}
 
-                    {messages.map((m) => (
-                      <div key={m.id} className={clsx('my-1', (m.senderId === (devUserId || 'me')) ? 'text-right' : 'text-left')}>
-                        <div className={clsx('inline-block px-3 py-2 rounded', (m.senderId === (devUserId || 'me')) ? 'bg-green-100' : 'bg-white border')}>
-                          {m.imageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={m.imageUrl} alt="image" className="max-w-[220px] max-h-[220px] rounded mb-1 object-cover" />
-                          ) : null}
-                          {m.content ? <div className="text-sm whitespace-pre-wrap break-words">{m.content}</div> : null}
-                          <div className="text-[10px] text-gray-500">{new Date(m.createdAt).toLocaleTimeString()} {m.isRead ? '✓✓' : '✓'}</div>
+                    {messages.map((m) => {
+                      // Check if this is a quotation request message by looking for the signature
+                      const isQuotationRequest = m.content?.includes('— Sent via CropDirect Request Quote feature');
+                      // Quotation requests should appear left-aligned, other messages follow normal logic
+                      const isFromCurrentUser = (m.senderId === (devUserId || 'me')) && !isQuotationRequest;
+                      
+                      return (
+                        <div key={m.id} className={clsx('my-1', isFromCurrentUser ? 'text-right' : 'text-left')}>
+                          <div className={clsx('inline-block px-3 py-2 rounded', isFromCurrentUser ? 'bg-green-100' : 'bg-white border')}>
+                            {m.imageUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={m.imageUrl} alt="image" className="max-w-[220px] max-h-[220px] rounded mb-1 object-cover" />
+                            ) : null}
+                            {m.content ? <div className="text-sm whitespace-pre-wrap break-words">{m.content}</div> : null}
+                            <div className="text-[10px] text-gray-500">{new Date(m.createdAt).toLocaleTimeString()} {m.isRead ? '✓✓' : '✓'}</div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* Pending image previews shown before sending */}
