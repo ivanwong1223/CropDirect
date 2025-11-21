@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CropDirect – Agricultural Trading & Supply Chain Platform
 
-## Getting Started
+CropDirect is a full-stack web-based agricultural trading platform built with **Next.js**, **Prisma**, **PostgreSQL**, and **AWS services**, designed to connect three key roles in the agriculture supply chain:
 
-First, run the development server:
+- **Agribusinesses** – farmers and sellers who list their agricultural products  
+- **Business Buyers** – wholesale buyers who purchase crops and place bid prices  
+- **Logistics Partners** – delivery partners who handle shipment, pickup, and order fulfilment  
+
+The platform streamlines the trading process by offering **direct market access**, **fair pricing**, and **real-time decision support** through integrated tools and APIs.
+
+---
+
+## 🚀 Features
+
+### 🌾 For Agribusinesses
+- Create, edit, and publish crop listings
+- Enable bidding and set minimum bid increments
+- View subscription plans and upgrade via Stripe
+- Monitor orders and KYB verification status
+
+### 🛒 For Business Buyers
+- Browse marketplace listings
+- Place bids or buy directly
+- Earn loyalty points from successful purchases
+- Redeem points for future discounts
+- Receive product recommendations and pricing insights
+
+### 🚚 For Logistics Partners
+- Manage pickup and delivery workflow
+- Update order statuses (Accepted → Ready to Pickup → Delivered)
+- Receive KYB verification updates
+
+### 📰 Platform-Wide Tools
+- Integrated **Mediastack API** for agriculture news feed  
+- Real-time chat messaging with image support  
+- Role-based authentication using **NextAuth**  
+- Secure file uploads using **AWS S3**  
+- Product image gallery  
+- Subscription & billing via **Stripe**  
+- Error prevention and form validations  
+- Responsive UI built with **TailwindCSS + Radix UI**  
+
+---
+
+## 📁 Tech Stack
+
+- **Frontend:** Next.js 14 (App Router), TypeScript, TailwindCSS  
+- **Backend:** Next.js API Routes, Prisma ORM  
+- **Database:** PostgreSQL  
+- **Authentication:** NextAuth  
+- **Cloud Services:** AWS S3, AWS SDK  
+- **Payments:** Stripe Checkout + Webhooks  
+- **Real-time Communication:** Socket.io  
+- **External APIs:** Mediastack News API  
+
+---
+
+## 🛠️ Getting Started
+
+Clone the repository:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+git clone https://github.com/ivanwong1223/CropDirect.git
+cd CropDirect
